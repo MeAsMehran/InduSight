@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     
     # project apps:
     'apps.accounts.apps.AccountsConfig',
+    'apps.devices.apps.DevicesConfig',
     
 ]
 
