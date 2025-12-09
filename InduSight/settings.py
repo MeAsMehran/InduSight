@@ -66,6 +66,7 @@ TEMPLATES = [
     },
 ]
 
+
 WSGI_APPLICATION = 'InduSight.wsgi.application'
 
 
