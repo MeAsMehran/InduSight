@@ -37,6 +37,15 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    
+    # project apps:
+    'apps.accounts.apps.AccountsConfig',
+    'apps.devices.apps.DevicesConfig',
+
+    # third-party apps:
+    'rest_framework',
+    'drf_yasg',
+    
 ]
 
 MIDDLEWARE = [
@@ -49,7 +58,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'InduSight.urls'
+ROOT_URLCONF = 'config.urls'
 
 TEMPLATES = [
     {
@@ -66,7 +75,8 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'InduSight.wsgi.application'
+
+WSGI_APPLICATION = 'config.wsgi.application'
 
 
 # Database
@@ -74,8 +84,12 @@ WSGI_APPLICATION = 'InduSight.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'indusight_db',
+        'USER': 'postgres',
+        'PASSWORD': 'admin',
+        'HOST': 'localhost',
+        'PORT': '5432'
     }
 }
 
@@ -115,3 +129,36 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+
+# CELERY SETTINGS:
+CELERY_BROKER_URL = "redis://localhost:6379/0"
+CELERY_RESULT_BACKEND = "redis://localhost:6379/1"
+CELERY_TIMEZONE = 'Asia/Tehran'
+CELERY_ENABLE_UTC = False
+CELERY_BEAT_SCHEDULE = {
+    'periodic_task_1': {  # task name
+        'task': 'apps.devices.tasks.celery_periodic_task',  # full path to task
+        'schedule': 5.0,  # every 5 seconds
+    },
+
+    # 'periodic_task_2': {  # scheduled task example
+    #     'task': 'apps.devices.tasks.add',
+    #     'schedule': crontab(hour=0, minute=0),  # daily at midnight
+    # },
+
+}
+
+
+
+# SWAGGER SETTINGS:
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header'
+        }
+    },
+    'USE_SESSION_AUTH': False,
+}
