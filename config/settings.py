@@ -125,3 +125,23 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+
+# CELERY SETTINGS:
+CELERY_BROKER_URL = "redis://localhost:6379/0"
+CELERY_RESULT_BACKEND = "redis://localhost:6379/1"
+CELERY_TIMEZONE = 'Asia/Tehran'
+CELERY_ENABLE_UTC = False
+CELERY_BEAT_SCHEDULE = {
+    'periodic_task_1': {  # task name
+        'task': 'apps.devices.tasks.celery_periodic_task',  # full path to task
+        'schedule': 5.0,  # every 5 seconds
+    },
+
+    # 'periodic_task_2': {  # scheduled task example
+    #     'task': 'apps.devices.tasks.add',
+    #     'schedule': crontab(hour=0, minute=0),  # daily at midnight
+    # },
+
+}
+
