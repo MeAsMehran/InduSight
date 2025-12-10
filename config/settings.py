@@ -41,6 +41,10 @@ INSTALLED_APPS = [
     # project apps:
     'apps.accounts.apps.AccountsConfig',
     'apps.devices.apps.DevicesConfig',
+
+    # third-party apps:
+    'rest_framework',
+    'drf_yasg',
     
 ]
 
@@ -128,8 +132,8 @@ STATIC_URL = 'static/'
 
 
 # CELERY SETTINGS:
-CELERY_BROKER_URL = "redis://localhost:6379/0"
-CELERY_RESULT_BACKEND = "redis://localhost:6379/1"
+CELERY_BROKER_URL = 'redis://127.0.0.1:6379/2'
+CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/2'
 CELERY_TIMEZONE = 'Asia/Tehran'
 CELERY_ENABLE_UTC = False
 CELERY_BEAT_SCHEDULE = {
@@ -145,3 +149,51 @@ CELERY_BEAT_SCHEDULE = {
 
 }
 
+
+
+# REDIS SETTINGS:
+CACHES = {
+
+    # FOR CACHING
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/0',  # cache
+        'OPTIONS': {'CLIENT_CLASS': 'django_redis.client.DefaultClient'},
+    },
+
+    # FOR SESSIONS
+    'sessions': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/1',  # sessions
+        'OPTIONS': {'CLIENT_CLASS': 'django_redis.client.DefaultClient'},
+    },
+
+    # FOR BACKGROUND TASKS (e.g., Celery results or queues)
+    'tasks': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/2',  # background tasks
+        'OPTIONS': {'CLIENT_CLASS': 'django_redis.client.DefaultClient'},
+    },
+
+}
+# Optional: This is to ensure Django sessions are stored in Redis
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_CACHE_ALIAS = 'sessions'
+# for background tasks (e.g., Celery)
+CELERY_BROKER_URL = 'redis://127.0.0.1:6379/2'
+CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/2'
+
+
+
+
+# SWAGGER SETTINGS:
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header'
+        }
+    },
+    'USE_SESSION_AUTH': False,
+}
