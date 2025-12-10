@@ -41,6 +41,10 @@ INSTALLED_APPS = [
     # project apps:
     'apps.accounts.apps.AccountsConfig',
     'apps.devices.apps.DevicesConfig',
+
+    # third-party apps:
+    'rest_framework',
+    'drf_yasg',
     
 ]
 
@@ -145,3 +149,16 @@ CELERY_BEAT_SCHEDULE = {
 
 }
 
+
+
+# SWAGGER SETTINGS:
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header'
+        }
+    },
+    'USE_SESSION_AUTH': False,
+}
