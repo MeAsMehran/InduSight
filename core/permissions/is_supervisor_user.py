@@ -1,7 +1,7 @@
 from rest_framework.permissions import BasePermission
 
 
-class IsSupervisorUser(self, request, view):
+class IsSupervisorUser(BasePermission):
     """
         Allows the Supervisor User to have access
     """
