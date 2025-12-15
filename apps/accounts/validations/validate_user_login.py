@@ -23,10 +23,10 @@ def validate_login(data):
     user = CustomUser.objects.filter(phone_number=phone_number_value).first()
 
     if not user:
-        raise AuthenticationFailed('user not found!')
+        raise AuthenticationFailed('User not found or invalid password')
     
     if not user.check_password(password_value):
-        raise AuthenticationFailed('Invalid password!')
+        raise AuthenticationFailed('User not found or invalid password!')
     
     refresh = RefreshToken.for_user(user)
 

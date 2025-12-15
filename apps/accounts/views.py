@@ -21,7 +21,8 @@ from core.permissions.is_supervisor_user import IsSupervisorUser
 from core.permissions.is_not_authenticated import IsNotAuthenticated
 
 # Serializers:
-from .serializers import CustomUserRegisterSerializer, CustomUserLoginSerializer, UserSerializer, CustomUserLogoutSerializer
+from .serializers import CustomUserRegisterSerializer, CustomUserLoginSerializer, \
+        CustomUserLogoutSerializer, UserUpdateSerializer, UserSerializer
 
 
 # Create your views here.
@@ -88,26 +89,36 @@ class LogoutAPIView(APIView):
         except TokenError:
             return Response({"detail": "Invalid token."}, status=status.HTTP_400_BAD_REQUEST)
 
+
 class CreateUserAPIView(CreateAPIView):
-    permission_class = [IsAdminUser]
+    permission_classes = [IsAdminUser]
     serializer_class = CustomUserRegisterSerializer
     
-
 
 class UpdateUserAPIView(UpdateAPIView):
-    permission_class = [IsAdminUser]
+    permission_classes = [IsAdminUser]
     queryset = CustomUser.objects.all()
-    serializer_class = CustomUserRegisterSerializer
-    
+    serializer_class = UserUpdateSerializer
+    lookup_field = 'id'
+    lookup_url_kwarg = 'user_id'
+
+    def put(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+
+    def patch(self, request, *args, **kwargs):
+        return self.partial_update(request, *args, **kwargs)
     
 class DetailUserAPIView(RetrieveAPIView):
     permission_classes = [IsAdminUser]
-    queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
+    queryset = CustomUser.objects.all()
+    lookup_field = 'id'
+    lookup_url_kwarg = 'user_id'
     
-    
+
 class UserListsAPIView(ListAPIView):
-    permission_class = [IsAdminUser]
+    permission_classes = [IsAdminUser]
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
+
 
