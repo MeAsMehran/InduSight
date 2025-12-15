@@ -1,5 +1,4 @@
 from django.urls import path
-
 from .views import UserRegisterAPIView, UserLoginAPIView, UserView, LogoutView, UserListsView
 
 app_name='accounts'
