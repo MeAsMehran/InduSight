@@ -34,4 +34,3 @@ def validate_register(data):
     return data
 
 
-
