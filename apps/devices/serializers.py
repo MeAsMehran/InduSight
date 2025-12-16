@@ -44,16 +44,19 @@ class DeviceSerializer(serializers.ModelSerializer):
         return device
 
 
+from apps.devices.validations.device_log_validate import device_log_validate
 class DeviceLogCreateSerializer(serializers.ModelSerializer):
-    device = serializers.PrimaryKeyRelatedField(
-        queryset=Device.objects.all()
-    )
-    device_type = serializers.PrimaryKeyRelatedField(
-        queryset=DeviceType.objects.all()
-    )
+    device = serializers.CharField()
+    device_type = serializers.CharField()
     class Meta:
         model = DeviceLog
         fields = ('device', 'device_type', 'value')
+
+    def validate(self, attrs):
+        return device_log_validate(data=attrs)
+
+    def create(self, validated_data):
+        return super().create(validated_data)
 
 
 class DeviceLogSerializer(serializers.Serializer):
