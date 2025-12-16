@@ -1,7 +1,8 @@
 from django.db import models
+from apps.accounts.models import CustomUser
+
 
 # Create your models here.
-
 
 class DeviceType(models.Model):
 
@@ -20,6 +21,7 @@ class Device(models.Model):
     code = models.CharField(unique=True)
     des = models.CharField(max_length=250, blank=True, null=True)
     device_type = models.ManyToManyField(DeviceType,)
+    supervisor = models.ManyToManyField(CustomUser)
 
     def __str__(self) -> str:
         return str(self.name)

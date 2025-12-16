@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Device, DeviceLog, DeviceType
 from django.utils import timezone
+from apps.accounts.models import CustomUser
 
 
 
@@ -19,14 +20,27 @@ class DeviceSerializer(serializers.ModelSerializer):
         write_only=True
     )
 
+    supervisor = serializers.StringRelatedField(many=True, read_only=True)
+
+    supervisor_ids = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=CustomUser.objects.all(),
+        write_only=True
+    )
+
     class Meta:
         model = Device
         fields = '__all__'
 
     def create(self, validated_data):
+        supervisors = validated_data.pop('supervisor_ids', [])
         device_type_ids = validated_data.pop('device_type_ids', [])
+
         device = Device.objects.create(**validated_data)
+
         device.device_type.set(device_type_ids)
+        device.supervisor.set(supervisors)
+
         return device
 
 
