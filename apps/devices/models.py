@@ -21,8 +21,8 @@ class Device(models.Model):
     des = models.CharField(max_length=250, blank=True, null=True)
     device_type = models.ManyToManyField(DeviceType,)
 
-    def __str__(self):
-        return self.name
+    def __str__(self) -> str:
+        return str(self.name)
 
 
 class DeviceLog(models.Model):
