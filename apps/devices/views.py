@@ -1,16 +1,17 @@
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.generics import CreateAPIView, RetrieveAPIView, ListAPIView, DestroyAPIView
-from rest_framework.permissions import IsAdminUser
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.views import APIView
 from .models import  Device, DeviceLog, DeviceType
 from rest_framework import status
-from .serializers import DeviceSerializer, DeviceTypeSerializer, DeviceLogSerializer
+from .serializers import DeviceSerializer, DeviceTypeSerializer, DeviceLogSerializer, DeviceLogOutputSerializer, DeviceLogCreateSerializer
 from django.core.cache import cache
 # from .service import DeviceService
 from .models import Device
 from drf_yasg.utils import swagger_auto_schema
 from django.utils.decorators import method_decorator
+from core.permissions.is_supervisor_user import IsSupervisorAndDeviceOwner
 
 
 # from .tasks import process_receive_send_data
@@ -104,7 +105,7 @@ class DeleteDeviceType(DestroyAPIView):
 )
 class CreateDeviceLog(CreateAPIView):
     queryset = DeviceLog.objects.all()
-    serializer_class = DeviceLogSerializer
+    serializer_class = DeviceLogCreateSerializer
     # permission_classes = [IsAdminUser]
 
 
@@ -124,7 +125,19 @@ class DetailDeviceLog(RetrieveAPIView):
 )
 class ListDeviceLog(ListAPIView):
     queryset = DeviceLog.objects.all()
-    serializer_class = DeviceLogSerializer
+    permission_classes = [IsAuthenticated & (IsAdminUser | IsSupervisorAndDeviceOwner)]
+    serializer_class = DeviceLogOutputSerializer
+
+    def get_queryset(self):
+        user = self.request.user 
+
+        if user.role.name == 'admin':
+            return DeviceLog.objects.all()[0:30]
+
+        if user.role.name == 'supervisor':
+            return DeviceLog.objects.filter(device__supervisor=user)[0:30]
+
+        return DeviceLog.objects.none()
 
 
 @method_decorator(

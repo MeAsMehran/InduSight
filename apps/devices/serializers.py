@@ -44,6 +44,18 @@ class DeviceSerializer(serializers.ModelSerializer):
         return device
 
 
+class DeviceLogCreateSerializer(serializers.ModelSerializer):
+    device = serializers.PrimaryKeyRelatedField(
+        queryset=Device.objects.all()
+    )
+    device_type = serializers.PrimaryKeyRelatedField(
+        queryset=DeviceType.objects.all()
+    )
+    class Meta:
+        model = DeviceLog
+        fields = ('device', 'device_type', 'value')
+
+
 class DeviceLogSerializer(serializers.Serializer):
 
     device_ids = serializers.ListField(
@@ -81,9 +93,17 @@ class DeviceLogOutputSerializer(serializers.Serializer):
     device_type = DeviceTypeNestedSerializer()
     time = serializers.DateTimeField()
     value = serializers.FloatField()
+    supervisor = serializers.SerializerMethodField(read_only=True)  # This is for the test 
 
     class Meta:
         fields = ('id', 'device', 'device_type', 'time', 'value')
+
+    def get_supervisor(self, obj):
+        return [
+            user.role.name
+            for user in obj.device.supervisor.all()
+            if user.role
+        ]
 
 
 # For PUT request method
