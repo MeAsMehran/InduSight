@@ -1,7 +1,7 @@
 from django.urls import path
 from apps.devices.views import CreateDevice, SendDate, ReceivedData, ShowDataView, DetailDevice, ListDevice, \
     DeleteDevice, CreateDeviceType, ListDeviceType, DeleteDeviceType, DetailDeviceType, CreateDeviceLog, \
-    DetailDeviceLog, ListDeviceLog, DeleteDeviceLog
+    DetailDeviceLog, ListDeviceLog, DeleteDeviceLog, UpdateDeviceStatusAPIView 
 
 app_name='machine'
 
@@ -24,6 +24,9 @@ urlpatterns = [
     path('device_log/retrieve/<int:id>/', DetailDeviceLog.as_view(), name='detail_device_log'),
     path('device_log/list/', ListDeviceLog.as_view(), name='list_device_log'),
     path('device_log/delete/<int:id>/', DeleteDeviceLog.as_view(), name='delete_device_log'),
+
+    # Device Status:
+    path('device/<int:device_id>/status/', UpdateDeviceStatusAPIView.as_view(), name='device_status'),
 
     # path('test_send/', test_send, name='test_send'),
     # path('show_data/', ShowDataView.as_view(), name='show_data'),
