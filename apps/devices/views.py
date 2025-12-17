@@ -1,12 +1,13 @@
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework.response import Response
-from rest_framework.generics import CreateAPIView, RetrieveAPIView, ListAPIView, DestroyAPIView
+from rest_framework.generics import CreateAPIView, RetrieveAPIView, ListAPIView, DestroyAPIView, get_object_or_404
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.views import APIView
 from .models import  Device, DeviceLog, DeviceType
 from rest_framework import status
 from .serializers import DeviceSerializer, DeviceTypeSerializer, DeviceLogSerializer, DeviceLogOutputSerializer, DeviceLogCreateSerializer
-from django.core.cache import cache
+from django.core.cache import caches
 # from .service import DeviceService
 from .models import Device
 from drf_yasg.utils import swagger_auto_schema
@@ -99,10 +100,7 @@ class DeleteDeviceType(DestroyAPIView):
 
 
 # DEVICE LOG CRUD:
-@method_decorator(
-    name='post',
-    decorator=swagger_auto_schema(tags=['DeviceLogs'])
-)
+@method_decorator(name='post', decorator=swagger_auto_schema(tags=['DeviceLogs']))
 class CreateDeviceLog(CreateAPIView):
     queryset = DeviceLog.objects.all()
     serializer_class = DeviceLogCreateSerializer
@@ -140,14 +138,67 @@ class ListDeviceLog(ListAPIView):
         return DeviceLog.objects.none()
 
 
-@method_decorator(
-    name='delete',
-    decorator=swagger_auto_schema(tags=['DeviceLogs'])
-)
+@method_decorator(name='delete', decorator=swagger_auto_schema(tags=['DeviceLogs']))
 class DeleteDeviceLog(DestroyAPIView):
     queryset = DeviceLog.objects.all()
     serializer_class = DeviceLogSerializer
     lookup_field = 'id'
+
+
+@method_decorator(name='post', decorator=swagger_auto_schema(tags=['Devices']))
+class UpdateDeviceStatusAPIView(APIView):
+
+    def setup(self, request, *args, **kwargs):
+        self.cache = caches['default']
+        return super().setup(request, *args, **kwargs)
+
+    def post(self, request, device_id):
+        last_device_log = DeviceLog.objects.filter(device=device_id).order_by('-time').first()
+        device = get_object_or_404(Device, id=device_id)
+        device_data_types = device.device_type.values_list('id', flat=True)     # device data types -> [1, 3, 4]
+        lately_data = []
+        
+        if not last_device_log:
+            # device is offline
+            self.cache.set(f"device:{device_id}:status", "Offline", timeout=30)
+            return Response({f"device:{device_id}:status" : "Offline"})
+
+        for data_type in device_data_types:
+            data_type_log = DeviceLog.objects.filter(device=device, device_type=data_type).order_by('-time').first()
+
+            if data_type_log is not None:
+                value = data_type_log.value
+            else:
+                value = None
+
+            data_type_log_json = {
+                    f"{DeviceType.objects.get(id=data_type).parameter}" : value
+                }
+            lately_data.append(data_type_log_json)
+
+
+        now_time = timezone.now() 
+        last_device_log_time = last_device_log.time 
+        difference = (now_time - last_device_log_time).total_seconds()
+
+        if difference <= 120:
+            # device is online
+            self.cache.set(f"device:{last_device_log.device.id}:status", "Online", timeout=30)
+            return Response({f"device:{device_id}:status" : "Online"})
+            
+        else:
+            # device is offline
+            self.cache.set(f"device:{last_device_log.device.id}:status", "Offline", timeout=30)
+            return Response({f"device:{device_id}:status" : "Offline"})
+
+
+# class GetDeviceStatusAPIView(APIView):
+         
+
+
+        
+
+    
 
 
 
