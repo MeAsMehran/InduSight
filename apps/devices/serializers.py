@@ -59,23 +59,38 @@ class DeviceLogCreateSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
-class DeviceLogSerializer(serializers.Serializer):
+class DeviceLogSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = DeviceLog
+        fields = "__all__"
+
+
+class DeviceLogListSerializer(serializers.Serializer):
 
     device_ids = serializers.ListField(
         child=serializers.IntegerField(), 
-        allow_empty=True,
-        required=False
+        allow_empty=False,
+        required=True,
     )
     device_type_ids = serializers.ListField(
         child=serializers.IntegerField(),
         allow_empty=True,
         required=False
     )
-    start_date = serializers.DateTimeField()
-    end_date = serializers.DateTimeField()
+
+    start_date = serializers.DateTimeField(required=False, allow_null=True)
+    end_date = serializers.DateTimeField(required=False, allow_null=True)
+
+    order_by = serializers.CharField(required=False, allow_null=True)
+    search = serializers.CharField(required=False, allow_null=True)
+
+    page_size = serializers.IntegerField(required=False, allow_null=True)
+    page_number = serializers.IntegerField(required=False, allow_null=True)
 
     class Meta:
-        fields = ('device_ids', 'device_type_ids', 'start_date', 'end_date')
+        model = DeviceLog
+        fields = ('device_ids', 'device_type_ids', 'page_size', 'page_number','order_by','search','start_date', 'end_date')
 
 
 class DeviceNestedSerializer(serializers.ModelSerializer):
