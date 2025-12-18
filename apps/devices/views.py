@@ -1,4 +1,5 @@
 from django.urls import reverse
+from django.db.models import Avg, Max, Min
 from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.generics import CreateAPIView, RetrieveAPIView, ListAPIView, DestroyAPIView, get_object_or_404
@@ -7,7 +8,7 @@ from rest_framework.views import APIView
 from .models import  Device, DeviceLog, DeviceType
 from rest_framework import status
 from apps.devices.serializers import DeviceSerializer, DeviceTypeSerializer, \
-    DeviceLogListSerializer, DeviceLogOutputSerializer, DeviceLogCreateSerializer, DeviceLogSerializer
+    DeviceLogListSerializer, DeviceLogOutputSerializer, DeviceLogCreateSerializer, DeviceLogSerializer, DeviceLogStatsSerializer
 from django.core.cache import caches
 from drf_yasg import openapi
 from rest_framework import serializers
@@ -171,6 +172,7 @@ class UpdateDeviceStatusAPIView(APIView):
 
 from apps.devices.services.device_status_service import device_status
 from apps.devices.queries.device_log_filter import dev_log_filter
+from apps.devices.utils.device_logs_csv import export_device_logs_to_csv
 class GetDeviceStatusReportAPIView(APIView):
     model = DeviceLog
     queryset = DeviceLog.objects.all()
@@ -250,6 +252,13 @@ class GetDeviceStatusReportAPIView(APIView):
                 type=openapi.TYPE_STRING,
                 required=False
             ),
+            openapi.Parameter(
+                name='export',
+                in_=openapi.IN_QUERY,
+                description='export device logs',
+                type=openapi.TYPE_STRING,
+                required=False
+            ),
         ]
     )
     def get(self, request):
@@ -281,6 +290,7 @@ class GetDeviceStatusReportAPIView(APIView):
             "search": request.GET.get("search"),
             "page_number": request.GET.get("page_number"),
             "page_size": request.GET.get("page_size"),
+            "export": request.GET.get("export"),
         }
 
         serializer = self.serializer_class(data=query_params)
@@ -293,6 +303,22 @@ class GetDeviceStatusReportAPIView(APIView):
         # Filter queryset
         queryset = dev_log_filter(params=validated_params, device_logs=device_logs)
 
+        if validated_params.get("export") == "csv":
+            return export_device_logs_to_csv(queryset)
+
+        # avg/max/min stats:
+        stats_qs = (
+            queryset
+            .values("device_type__id", "device_type__parameter")
+            .annotate(
+                avg_value=Avg("value"),
+                max_value=Max("value"),
+                min_value=Min("value"),
+            )
+        )
+
+        stats = DeviceLogStatsSerializer(stats_qs, many=True).data
+
         # Apply pagination
         paginator = self.pagination_class()
         page = paginator.paginate_queryset(queryset, request)
@@ -302,7 +328,8 @@ class GetDeviceStatusReportAPIView(APIView):
             return paginator.get_paginated_response(output.data)
 
         output = DeviceLogOutputSerializer(queryset, many=True)
-        return Response({"data": output.data, 'device_status' : device_status_count})
+        return Response({'device_status' : device_status_count, "data": output.data, "stats": stats},
+                status=status.HTTP_200_OK)
         
 
 # class ShowDataView(APIView):
