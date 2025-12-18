@@ -34,6 +34,6 @@ def validate_login(data):
         'phone_number': phone_number_value,
         'token' : {
             'refresh' : str(refresh),
-            'access' : str(refresh.access_token),
+            'access' : 'Bearer ' + str(refresh.access_token),
         }
     }
