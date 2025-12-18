@@ -66,6 +66,7 @@ class DeviceLogSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+from apps.devices.validations.params_validate import params_validate
 class DeviceLogListSerializer(serializers.Serializer):
 
     device_ids = serializers.ListField(
@@ -91,6 +92,9 @@ class DeviceLogListSerializer(serializers.Serializer):
     class Meta:
         model = DeviceLog
         fields = ('device_ids', 'device_type_ids', 'page_size', 'page_number','order_by','search','start_date', 'end_date')
+
+    def validate(self, attrs):
+        return params_validate(data=attrs)
 
 
 class DeviceNestedSerializer(serializers.ModelSerializer):

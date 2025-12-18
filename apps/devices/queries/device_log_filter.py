@@ -1,7 +1,5 @@
 from django.db.models import Q
 from django.utils import timezone
-from apps.devices.models import Device, DeviceType, DeviceLog
-
 
 def dev_log_filter(params, device_logs):
 
@@ -14,6 +12,7 @@ def dev_log_filter(params, device_logs):
     search = params.get('search')
 
 
+    
 
     our_filter = Q()
 

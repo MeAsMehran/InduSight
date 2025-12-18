@@ -1,7 +1,7 @@
 from django.urls import path
 
 from .views import UserRegisterAPIView, UserLoginAPIView, UserAPIView, LogoutAPIView, UserListsAPIView, \
-        CreateUserAPIView, UpdateUserAPIView, DetailUserAPIView  
+        CreateUserAPIView, UpdateUserAPIView, DetailUserAPIView
 
 app_name='accounts'
 

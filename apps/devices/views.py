@@ -109,7 +109,10 @@ class ListDeviceLog(ListAPIView):
         if user.role.name == 'supervisor':
             return DeviceLog.objects.filter(device__supervisor=user)
 
-        return DeviceLog.objects.none()
+        else:
+            return DeviceLog.objects.none()
+
+        # return DeviceLog.objects.none()
 
 
 @method_decorator(name='delete', decorator=swagger_auto_schema(tags=['DeviceLogs']))
@@ -168,25 +171,12 @@ class UpdateDeviceStatusAPIView(APIView):
 
 from apps.devices.services.device_status_service import device_status
 from apps.devices.queries.device_log_filter import dev_log_filter
-@method_decorator(name='get', decorator=swagger_auto_schema(tags=['DeviceLogs']))
 class GetDeviceStatusReportAPIView(APIView):
     model = DeviceLog
     queryset = DeviceLog.objects.all()
-    permission_classes = [IsAuthenticated & (IsAdminUser | IsSupervisorAndDeviceOwner)]
+    permission_classes = [IsAuthenticated & IsAdminUser | IsSupervisorAndDeviceOwner]
     serializer_class = DeviceLogListSerializer
     pagination_class = DeviceLogPagination
-
-    def setup(self, request, *args, **kwargs):
-        if request.user.role.name == 'admin':
-                self.device_logs = DeviceLog.objects.all()
-
-        if request.user.role.name == 'supervisor':
-            self.device_logs = DeviceLog.objects.filter(device__supervisor=request.user)
-        
-        # None of the roles above:
-        self.device_logs = DeviceLog.objects.none()
-
-        return super().setup(request, *args, **kwargs)
 
     def parse_int_list(self, raw_value):
         """
@@ -263,7 +253,14 @@ class GetDeviceStatusReportAPIView(APIView):
         ]
     )
     def get(self, request):
+        user = request.user
+        if user.role.name == 'admin':
+            device_logs = DeviceLog.objects.all()
 
+        if user.role.name == 'supervisor':
+            device_logs = DeviceLog.objects.filter(device__supervisor=user)
+        
+        
         # Online/Offline devices number:
         device_status_count = device_status()
 
@@ -294,7 +291,7 @@ class GetDeviceStatusReportAPIView(APIView):
         validated_params = serializer.validated_data
 
         # Filter queryset
-        queryset = dev_log_filter(validated_params, self.device_logs)
+        queryset = dev_log_filter(params=validated_params, device_logs=device_logs)
 
         # Apply pagination
         paginator = self.pagination_class()
