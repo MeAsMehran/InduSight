@@ -1,6 +1,7 @@
 from django.urls import path
 from apps.thresholds.views import ThresholdCreateAPIView, ThresholdUpdateAPIView, ThresholdDetailAPIView, \
-        ThresholdListAPIView, ThresholdDeleteAPIView
+        ThresholdListAPIView, ThresholdDeleteAPIView, AlertCreateAPIView, \
+        AlertDetailAPIView, AlertListAPIView, AlertDeleteAPIView
 
 app_name='threshold'
 
@@ -14,11 +15,10 @@ urlpatterns = [
     path('threshold/delete/<int:threshold_id>/', ThresholdDeleteAPIView.as_view(), name='delete_threshold'),
 
     # Alert api:
-    # path('alert/create/', CreateDeviceType.as_view(), name='create_device_type'),
-    # path('alert/list/', ListDeviceType.as_view(), name='list_device_type'),
-    # path('alert/delete/<int:id>/', DeleteDeviceType.as_view(), name='delete_device_type'),
-    # path('alert/retrieve/<int:id>/', DetailDeviceType.as_view(), name='detail_device_type'),
-
+    path('alert/create/', AlertCreateAPIView.as_view(), name='create_alert'),
+    path('alert/list/', AlertListAPIView.as_view(), name='list_alert'),
+    path('alert/delete/<int:alert_id>/', AlertDeleteAPIView.as_view(), name='delete_alert'),
+    path('alert/retrieve/<int:alert_id>/', AlertDetailAPIView.as_view(), name='detail_alert'),
 
 ]
 

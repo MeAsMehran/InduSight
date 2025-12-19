@@ -43,8 +43,8 @@ class AlertCreateSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         # run model-level validation
-        instance = Alert(**attrs)
-        instance.full_clean()
+        instance = Alert(**attrs)   # create an instance from Threshold with the attrs
+        instance.full_clean()   # check the attrs values with full_clean() which validate the the condition we set for saving a Threshold object in db! 
         return attrs
 
 

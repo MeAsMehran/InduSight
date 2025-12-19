@@ -59,20 +59,12 @@ class ThresholdDeleteAPIView(DestroyAPIView):
     lookup_field = 'id'
     lookup_url_kwarg = 'threshold_id'
 
+#==========================================================================================================================
 
 @method_decorator(name='post', decorator=swagger_auto_schema(tags=['Alerts']))
 class AlertCreateAPIView(CreateAPIView):
     queryset = Alert.objects.all()
     serializer_class = AlertCreateSerializer
-
-
-@method_decorator(name='put', decorator=swagger_auto_schema(tags=['Alerts']))
-@method_decorator(name='patch', decorator=swagger_auto_schema(tags=['Alerts']))
-class AlertUpdateAPIView(UpdateAPIView):
-    queryset = Alert.objects.all()
-    serializer_class = AlertUpdateSerializer
-    lookup_field = 'id'
-    lookup_url_kwarg = 'alert_id'
 
 
 @method_decorator(name='get', decorator=swagger_auto_schema(tags=['Alerts']))

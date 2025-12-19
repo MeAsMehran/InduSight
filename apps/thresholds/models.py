@@ -16,7 +16,6 @@ class Threshold(models.Model):
     max_value = models.FloatField(default=0) 
     active = models.BooleanField(default=False) 
 
-
     def clean(self):
         if self.min_value >= self.max_value:
             raise ValidationError(
@@ -43,13 +42,14 @@ class Alert(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def clean(self):
+        threshold_device_id = self.threshold.device.id
+        threshold_device_type_id = self.threshold.device_type.id
+
         if self.device and self.device_type:
-            if not self.device.device_type.filter(
-                id=self.device_type.id
-            ).exists():
-                raise ValidationError(
-                    "Selected device_type is not assigned to this device."
-                )
+            if not self.device.id == threshold_device_id:
+                raise ValidationError("Device and threshold's device is unmatched!(this threshold is not for this device)")
+            if not self.device_type.id == threshold_device_type_id:
+                raise ValidationError("Device Type and threshold's device type is unmatched!(this threshold is not for this device type)")
 
     def save(self, *args, **kwargs):
         if self.device and not self.device_type:
