@@ -29,6 +29,7 @@ urlpatterns = [
     # apps urls:
     path('accounts/', include('apps.accounts.urls', namespace='accounts')),
     path('devices/', include('apps.devices.urls', namespace='devices')),
+    path('thresholds/', include('apps.thresholds.urls', namespace='thresholds')),
 
     # Swagger URLs:
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
