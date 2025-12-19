@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     # project apps:
     'apps.accounts.apps.AccountsConfig',
     'apps.devices.apps.DevicesConfig',
+    'apps.thresholds.apps.ThresholdsConfig',
 
     # third-party apps:
     'rest_framework',
