@@ -200,6 +200,16 @@ CELERY_BROKER_URL = 'redis://127.0.0.1:6379/2'
 CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/2'
 
 
+# GMAIL SEND:
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST_USER = "homelessguy200303@gmail.com"
+DEFAULT_FROM_EMAIL = "homelessguy200303@gmail.com"
+EMAIL_HOST_PASSWORD = 'pxldcijjfbsvytwy'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
+EMAIL_TIMEOUT = 10
 
 
 # SWAGGER SETTINGS:
