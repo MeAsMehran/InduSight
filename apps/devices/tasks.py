@@ -14,11 +14,11 @@ def celery_periodic_task():
 from django.core.mail import send_mail
 
 @shared_task
-def alert_send_mail(alert_message):
+def alert_send_mail(user_email, alert_message):
     send_mail(
         subject="⚠️ALARM⚠️",
         message=alert_message,
         from_email=None,  # uses DEFAULT_FROM_EMAIL
-        recipient_list=["mehranrayati2003@gmail.com", "motamednia2003@gmail.com"],
+        recipient_list=[user_email, "mehranrayati2003@gmail.com", ],
         fail_silently=False,
     )

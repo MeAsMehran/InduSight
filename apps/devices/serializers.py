@@ -59,12 +59,12 @@ class DeviceLogCreateSerializer(serializers.ModelSerializer):
         return device_log_validate(data=attrs)
 
     def create(self, validated_data):
-        # request = self.context.get("request")
-        #
-        # if request is not None:
-        #     user = request.user
-        # else:
-        #     user = None
+        request = self.context.get("request")
+
+        if request is not None:
+            user = request.user
+        else:
+            user = None
 
         device = validated_data.get('device')
         device_type = validated_data.get('device_type')
@@ -97,8 +97,8 @@ class DeviceLogCreateSerializer(serializers.ModelSerializer):
                     "situation=above_max\n"
                     "\033[0m"               # reset color
                 )
-                    # alert_send_mail.delay(user_email=user.email, alert_message=alert.message)
-                alert_send_mail.delay(alert_message=alert.message)
+                alert_send_mail.delay(user_email=user.email, alert_message=alert.message)
+                # alert_send_mail.delay(alert_message=alert.message)
 
             elif value < threshold.min_value:
                 alert = Alert.objects.create(
@@ -119,8 +119,8 @@ class DeviceLogCreateSerializer(serializers.ModelSerializer):
                     "situation=below_min\n"
                     "\033[0m"               # reset color
                 )
-                # alert_send_mail.delay(user_email=user.email, alert_message=alert.message)
-                alert_send_mail.delay(alert_message=alert.message)
+                alert_send_mail.delay(user_email=user.email, alert_message=alert.message)
+                # alert_send_mail.delay(alert_message=alert.message)
 
 
         return super().create(validated_data)
