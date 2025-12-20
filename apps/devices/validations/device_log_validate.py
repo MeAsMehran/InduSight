@@ -5,6 +5,7 @@ from apps.devices.models import Device, DeviceType
 def device_log_validate(data):
     device_name = data.get('device')
     device_type_parameter = data.get('device_type')
+    value = data.get('value')
 
     try:
         device = Device.objects.get(name=device_name)
@@ -24,4 +25,5 @@ def device_log_validate(data):
     data['device_type'] = device_type
 
     return data
+
 

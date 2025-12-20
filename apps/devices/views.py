@@ -85,7 +85,7 @@ class DeleteDeviceType(DestroyAPIView):
 class CreateDeviceLog(CreateAPIView):
     queryset = DeviceLog.objects.all()
     serializer_class = DeviceLogCreateSerializer
-    # permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated]
 
 
 @method_decorator(name='get', decorator=swagger_auto_schema(tags=['DeviceLogs']))
