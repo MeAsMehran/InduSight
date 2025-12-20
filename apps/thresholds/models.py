@@ -35,7 +35,7 @@ class Threshold(models.Model):
 class Alert(models.Model):
     device = models.ForeignKey(Device, on_delete=models.SET_NULL, null=True, blank=True, related_name='alerts')
     device_type = models.ForeignKey(DeviceType, on_delete=models.SET_NULL, null=True, blank=True)
-    threshold = models.ForeignKey(Threshold, on_delete=models.SET_NULL, null=True, blank=True)
+    threshold = models.ForeignKey(Threshold, on_delete=models.SET_NULL, null=True, blank=True)  # 
     value = models.FloatField(default=0) 
     situation = models.CharField(choices=SITUATION, max_length=20) 
     message = models.CharField(max_length=255,)

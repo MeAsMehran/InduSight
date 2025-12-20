@@ -10,6 +10,7 @@ click-plugins==1.1.1.2
 click-repl==0.3.0
 colorama==0.4.6
 Django==6.0
+django-filter==25.2
 django-phonenumber-field==8.4.0
 django-redis==6.0.0
 djangorestframework==3.16.1

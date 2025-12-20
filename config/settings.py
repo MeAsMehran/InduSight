@@ -42,11 +42,13 @@ INSTALLED_APPS = [
     'apps.accounts.apps.AccountsConfig',
     'apps.devices.apps.DevicesConfig',
     'apps.thresholds.apps.ThresholdsConfig',
+    'apps.downtimes.apps.DowntimesConfig',
 
     # third-party apps:
     'rest_framework',
     'drf_yasg',
     'phonenumber_field',
+    'django_filters',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     
@@ -102,7 +104,10 @@ DATABASES = {
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    )
+    ),
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend'
+    ]
 
 }
 
