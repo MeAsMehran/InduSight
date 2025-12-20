@@ -5,7 +5,6 @@ from django.utils import timezone
 
 # serializer classes:
 
-
 class ThresholdCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Threshold
@@ -60,9 +59,58 @@ class AlertDetailSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+
 class AlertListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Alert
-        fields = '__all__'
+        fields = "__all__"
+
+
+class AlertFilterSerializer(serializers.Serializer):
+    
+    device_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        allow_empty=False
+    )
+
+    device_type_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        allow_empty=False
+    )
+
+    threshold_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        allow_empty=False
+    )
+
+    situations = serializers.ListField(
+        child=serializers.CharField(),
+        required=False,
+        allow_empty=False
+    )
+
+    start_date = serializers.DateTimeField(required=False, allow_null=True)
+    end_date = serializers.DateTimeField(required=False, allow_null=True)
+
+    search = serializers.CharField(required=False, allow_null=True)
+    order_by = serializers.CharField(required=False, allow_null=True)
+
+    page_size = serializers.IntegerField(required=False, allow_null=True)
+    page_number = serializers.IntegerField(required=False, allow_null=True)
+
+    def validate(self, attrs):
+        start = attrs.get("start_date")
+        end = attrs.get("end_date")
+
+        if start and end and start > end:
+            raise serializers.ValidationError(
+                "start_date must be earlier than end_date"
+            )
+
+        return attrs
+
 
 
