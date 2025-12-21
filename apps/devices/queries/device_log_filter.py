@@ -39,16 +39,33 @@ def dev_log_filter(params, device_logs):
     #                                Q(device_type__parameter__icontains=search))
 
     
+    
+    
     filtered_device_logs = device_logs.filter(
-        Q(time__range=(start_date, end_date)) & 
-        Q(device_id__in=device_ids) &
-        ((device_type_ids and Q(device_type_id__in=device_type_ids)) or Q()) &
-        ((search and (
-            Q(device__name__icontains=search) |
-            Q(device_type__parameter__icontains=search)
-        )) or Q())
+    (
+        # both start_date and end_date
+        (start_date and end_date and Q(time__range=(start_date, end_date)))
+
+        # only start_date → start_date to latest
+        or (start_date and not end_date and Q(time__gte=start_date))
+
+        # only end_date → first to end_date
+        or (end_date and not start_date and Q(time__lte=end_date))
+
+        # neither provided → no filter
+        or Q()
+    ) &
+
+    Q(device_id__in=device_ids) &
+
+    ((device_type_ids and Q(device_type_id__in=device_type_ids)) or Q()) &
+
+    ((search and (
+        Q(device__name__icontains=search) |
+        Q(device_type__parameter__icontains=search)
+    )) or Q())
     ).order_by(
-        *((order_by and (f"{order_by}",)) or ())
+    *((order_by and (order_by,)) or ())
     )
 
     # filtered_device_logs = device_logs.filter(our_filter)
