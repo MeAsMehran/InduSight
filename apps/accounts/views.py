@@ -28,7 +28,6 @@ from .serializers import CustomUserRegisterSerializer, CustomUserLoginSerializer
 # Create your views here.
 
 class UserRegisterAPIView(APIView):
-    # permission_classes = [IsAdminUser]
     serializer_class = CustomUserRegisterSerializer
 
     @swagger_auto_schema(request_body=CustomUserRegisterSerializer)
@@ -107,7 +106,8 @@ class UpdateUserAPIView(UpdateAPIView):
 
     def patch(self, request, *args, **kwargs):
         return self.partial_update(request, *args, **kwargs)
-    
+ 
+
 class DetailUserAPIView(RetrieveAPIView):
     permission_classes = [IsAdminUser]
     serializer_class = UserSerializer
