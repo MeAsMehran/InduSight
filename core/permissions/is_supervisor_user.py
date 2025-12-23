@@ -16,6 +16,7 @@ class IsSupervisorAndDeviceOwner(BasePermission):
     """
 
     def has_object_permission(self, request, view, obj):
+        obj.objects.get(device)
         return (
             request.user and
             request.user.is_authenticated and 
