@@ -17,7 +17,8 @@ from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 
 # models:
-from .models import Device, DeviceLog, DeviceType
+from apps.devices.models import Device, DeviceLog, DeviceType
+from apps.thresholds.models import Threshold, Alert
 
 # serializers:
 from apps.devices.serializers import DeviceSerializer, DeviceTypeSerializer, DeviceLogSerializer, DeviceLogCreateSerializer, \
@@ -96,12 +97,62 @@ class DeleteDeviceType(DestroyAPIView):
 
 
 # DEVICE LOG CRUD:
-@method_decorator(name='post', decorator=swagger_auto_schema(tags=['DeviceLogs']))
-class CreateDeviceLog(CreateAPIView):
-    permission_classes = [IsAdminUser]      # Don't need the admin permission, just wanted to test the permission
-    queryset = DeviceLog.objects.all()
-    serializer_class = DeviceLogCreateSerializer
+from apps.devices.tasks import alert_send_mail
+class CreateDeviceLog(APIView):
     permission_classes = [IsAuthenticated]
+    
+    @swagger_auto_schema(
+        request_body=DeviceLogCreateSerializer,
+        tags=['DeviceLogs']
+    )
+    def post(self, request):
+        user = request.user
+
+        serializer = DeviceLogCreateSerializer(data=request.data)
+        
+        # serializer.is_valid(raise_exception=True)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        device_log = serializer.save()
+
+        device = serializer.validated_data.get('device')
+        device_type = serializer.validated_data.get('device_type')
+        value = serializer.validated_data.get('value')
+
+        try:
+            threshold = Threshold.objects.get(device=device, device_type=device_type)
+        except Threshold.DoesNotExist:
+            raise ValidationError({"threshold": "No threshold found for this device and device type."})
+
+        if threshold.active:
+            if value > threshold.max_value:
+                alert = Alert.objects.create(
+                        device=device,
+                        device_type=device_type,
+                        threshold=threshold,
+                        value=value,
+                        situation="above_max",
+                        message=f"The value:{value} of device_type:{device_type} from device:{device} with code:{device.code} is above its threshold:{threshold.max_value}")
+                alert_send_mail.delay(user_email=user.email, alert_message=alert.message)
+                # alert_send_mail.delay(alert_message=alert.message)
+
+            elif value < threshold.min_value:
+                alert = Alert.objects.create(
+                        device=device,
+                        device_type=device_type,
+                        threshold=threshold,
+                        value=value,
+                        situation="below_min",
+                        message=f"The value:{value} of device_type:{device_type} with code:{device_type.code} from device:{device} with code:{device.code} is below its threshold:{threshold.min_value}")
+                
+                alert_send_mail.delay(user_email=user.email, alert_message=alert.message)
+                # alert_send_mail.delay(alert_message=alert.message)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+
 
 
 @method_decorator(name='get', decorator=swagger_auto_schema(tags=['DeviceLogs']))

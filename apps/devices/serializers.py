@@ -45,6 +45,7 @@ class DeviceSerializer(serializers.ModelSerializer):
 
         return device
 
+
 from apps.devices.tasks import alert_send_mail
 from apps.devices.validations.device_log_validate import device_log_validate
 class DeviceLogCreateSerializer(serializers.ModelSerializer):
@@ -57,73 +58,6 @@ class DeviceLogCreateSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         return device_log_validate(data=attrs)
-
-    def create(self, validated_data):
-        request = self.context.get("request")
-
-        if request is not None:
-            user = request.user
-        else:
-            user = None
-
-        device = validated_data.get('device')
-        device_type = validated_data.get('device_type')
-        value = validated_data.get('value')
-
-        # Get the device threshold:
-        try:
-            threshold = Threshold.objects.get(device=device, device_type=device_type)
-        except Threshold.DoesNotExist:
-            raise ValidationError("No Threshold found!")
-
-        # if device threshold was active:
-        if threshold.active:
-            if value > threshold.max_value:
-                alert = Alert.objects.create(
-                        device=device,
-                        device_type=device_type,
-                        threshold=threshold,
-                        value=value,
-                        situation="above_max",
-                        message=f"The value:{value} of device_type:{device_type} from device:{device} with code:{device.code} is above its threshold:{threshold.max_value}")
-
-                print(
-                    "\033[91m"              # red
-                    "\n⚠️ ALARM ⚠️\n"
-                    f"[ALERT] device={device.code}\n"
-                    f"type={device_type}\n"
-                    f"value={value}\n"
-                    f"max={threshold.max_value}\n"
-                    "situation=above_max\n"
-                    "\033[0m"               # reset color
-                )
-                alert_send_mail.delay(user_email=user.email, alert_message=alert.message)
-                # alert_send_mail.delay(alert_message=alert.message)
-
-            elif value < threshold.min_value:
-                alert = Alert.objects.create(
-                        device=device,
-                        device_type=device_type,
-                        threshold=threshold,
-                        value=value,
-                        situation="below_min",
-                        message=f"The value:{value} of device_type:{device_type} with code:{device_type.code} from device:{device} with code:{device.code} is below its threshold:{threshold.min_value}")
-                
-                print(
-                    "\033[91m"              # red
-                    "\n⚠️ ALARM ⚠️\n"
-                    f"[ALERT] device={device.code}\n"
-                    f"type={device_type}\n"
-                    f"value={value}\n"
-                    f"min={threshold.min_value}\n"
-                    "situation=below_min\n"
-                    "\033[0m"               # reset color
-                )
-                alert_send_mail.delay(user_email=user.email, alert_message=alert.message)
-                # alert_send_mail.delay(alert_message=alert.message)
-
-
-        return super().create(validated_data)
 
 
 class DeviceLogSerializer(serializers.ModelSerializer):
