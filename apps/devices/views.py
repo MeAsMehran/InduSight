@@ -152,23 +152,12 @@ class CreateDeviceLog(APIView):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-
-
-
 @method_decorator(name='get', decorator=swagger_auto_schema(tags=['DeviceLogs']))
 class DetailDeviceLog(RetrieveAPIView):
     permission_classes = [IsAdminUser | IsSupervisorAndDeviceOwner]
     queryset = DeviceLog.objects.all()
     serializer_class = DeviceLogSerializer
     lookup_field = 'id'
-
-    # def get_queryset(self):
-    #     user = self.request.user
-    #
-    #     if user.is_authenticated and user.role and user.role.name == "supervisor":
-    #         return DeviceLog.objects.filter(device__supervisor=user)
-    #
-    #     return DeviceLog.objects.all()
 
 
 @method_decorator(name='get',decorator=swagger_auto_schema(tags=['DeviceLogs']))
