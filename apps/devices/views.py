@@ -1,26 +1,34 @@
-from django.urls import reverse
-from django.db.models import Avg, Max, Min
+# django:
 from django.utils import timezone
-from rest_framework.response import Response
-from rest_framework.generics import CreateAPIView, RetrieveAPIView, ListAPIView, DestroyAPIView, get_object_or_404
-from rest_framework.permissions import IsAdminUser, IsAuthenticated
-from rest_framework.views import APIView
-from .models import  Device, DeviceLog, DeviceType
-from rest_framework import status
-from apps.devices.serializers import DeviceSerializer, DeviceTypeSerializer, \
-    DeviceLogListSerializer, DeviceLogOutputSerializer, DeviceLogCreateSerializer, DeviceLogSerializer, DeviceLogStatsSerializer
-from django.core.cache import caches
-from drf_yasg import openapi
-from rest_framework import serializers
-from apps.devices.paginations import DeviceLogPagination 
-# from .service import DeviceService
-from .models import Device
-from drf_yasg.utils import swagger_auto_schema
 from django.utils.decorators import method_decorator
+from django.core.cache import caches
+from django.db.models import Avg, Max, Min
+
+# drf:
+from rest_framework import status, serializers
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.generics import CreateAPIView, RetrieveAPIView, ListAPIView, \
+    DestroyAPIView, get_object_or_404
+from rest_framework.permissions import IsAuthenticated
+
+# swagger:
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
+
+# models:
+from .models import Device, DeviceLog, DeviceType
+
+# serializers:
+from apps.devices.serializers import DeviceSerializer, DeviceTypeSerializer, DeviceLogSerializer, DeviceLogCreateSerializer, \
+    DeviceLogListSerializer, DeviceLogOutputSerializer, DeviceLogStatsSerializer
+
+# paginations:
+from apps.devices.paginations import DeviceLogPagination
+
+# permissions:
 from core.permissions.is_supervisor_user import IsSupervisorAndDeviceOwner
-
-
-# from .tasks import process_receive_send_data
+from core.permissions.is_admin_user import IsAdminUser
 
 
 # Create your views here.
@@ -28,19 +36,21 @@ from core.permissions.is_supervisor_user import IsSupervisorAndDeviceOwner
 # DEVICE CRUD:
 @method_decorator(name='post', decorator=swagger_auto_schema(tags=['Devices']))
 class CreateDevice(CreateAPIView):
+    permission_classes = [IsAdminUser]
     queryset = Device.objects.all()
     serializer_class = DeviceSerializer
-    # permission_classes = [IsAdminUser]
 
 
 @method_decorator(name='get', decorator=swagger_auto_schema(tags=['Devices']))
 class ListDevice(ListAPIView):
+    permission_classes = [IsAdminUser]
     queryset = Device.objects.all()
     serializer_class = DeviceSerializer
 
 
 @method_decorator(name='get', decorator=swagger_auto_schema(tags=['Devices']))
 class DetailDevice(RetrieveAPIView):
+    permission_classes = [IsAdminUser]
     queryset = Device.objects.all()
     serializer_class = DeviceSerializer
     lookup_field = 'id'
@@ -48,6 +58,7 @@ class DetailDevice(RetrieveAPIView):
 
 @method_decorator(name='delete', decorator=swagger_auto_schema(tags=['Devices']))
 class DeleteDevice(DestroyAPIView):
+    permission_classes = [IsAdminUser]
     queryset = Device.objects.all()
     serializer_class = DeviceSerializer
     lookup_field = 'id'
@@ -56,12 +67,14 @@ class DeleteDevice(DestroyAPIView):
 # DEVICE TYPE CRUD:
 @method_decorator(name='post', decorator=swagger_auto_schema(tags=['DeviceTypes']))
 class CreateDeviceType(CreateAPIView):
+    permission_classes = [IsAdminUser]
     queryset = DeviceType.objects.all()
     serializer_class = DeviceTypeSerializer
 
 
 @method_decorator(name='get', decorator=swagger_auto_schema(tags=['DeviceTypes']))
 class DetailDeviceType(RetrieveAPIView):
+    permission_classes = [IsAdminUser]
     queryset = DeviceType.objects.all()
     serializer_class = DeviceTypeSerializer
     lookup_field = 'id'
@@ -69,12 +82,14 @@ class DetailDeviceType(RetrieveAPIView):
 
 @method_decorator(name='get', decorator=swagger_auto_schema(tags=['DeviceTypes']))
 class ListDeviceType(ListAPIView):
+    permission_classes = [IsAdminUser]
     queryset = DeviceType.objects.all()
     serializer_class = DeviceTypeSerializer
 
 
 @method_decorator(name='delete', decorator=swagger_auto_schema(tags=['DeviceTypes']))
 class DeleteDeviceType(DestroyAPIView):
+    permission_classes = [IsAdminUser]          
     queryset = DeviceType.objects.all()
     serializer_class = DeviceTypeSerializer
     lookup_field = 'id'
@@ -83,6 +98,7 @@ class DeleteDeviceType(DestroyAPIView):
 # DEVICE LOG CRUD:
 @method_decorator(name='post', decorator=swagger_auto_schema(tags=['DeviceLogs']))
 class CreateDeviceLog(CreateAPIView):
+    permission_classes = [IsAdminUser]      # Don't need the admin permission, just wanted to test the permission
     queryset = DeviceLog.objects.all()
     serializer_class = DeviceLogCreateSerializer
     permission_classes = [IsAuthenticated]
@@ -90,15 +106,24 @@ class CreateDeviceLog(CreateAPIView):
 
 @method_decorator(name='get', decorator=swagger_auto_schema(tags=['DeviceLogs']))
 class DetailDeviceLog(RetrieveAPIView):
+    permission_classes = [IsAdminUser | IsSupervisorAndDeviceOwner]
     queryset = DeviceLog.objects.all()
     serializer_class = DeviceLogSerializer
     lookup_field = 'id'
 
+    # def get_queryset(self):
+    #     user = self.request.user
+    #
+    #     if user.is_authenticated and user.role and user.role.name == "supervisor":
+    #         return DeviceLog.objects.filter(device__supervisor=user)
+    #
+    #     return DeviceLog.objects.all()
+
 
 @method_decorator(name='get',decorator=swagger_auto_schema(tags=['DeviceLogs']))
 class ListDeviceLog(ListAPIView):
-    queryset = DeviceLog.objects.all()
     permission_classes = [IsAuthenticated & (IsAdminUser | IsSupervisorAndDeviceOwner)]
+    queryset = DeviceLog.objects.all()
     serializer_class = DeviceLogOutputSerializer
 
     def get_queryset(self):
@@ -112,8 +137,6 @@ class ListDeviceLog(ListAPIView):
 
         else:
             return DeviceLog.objects.none()
-
-        # return DeviceLog.objects.none()
 
 
 @method_decorator(name='delete', decorator=swagger_auto_schema(tags=['DeviceLogs']))
@@ -174,9 +197,9 @@ from apps.devices.services.device_status_service import device_status
 from apps.devices.queries.device_log_filter import dev_log_filter
 from apps.devices.utils.device_logs_csv import export_device_logs_to_csv
 class GetDeviceStatusReportAPIView(APIView):
+    permission_classes = [IsAuthenticated & IsAdminUser | IsSupervisorAndDeviceOwner]
     model = DeviceLog
     queryset = DeviceLog.objects.all()
-    permission_classes = [IsAuthenticated & IsAdminUser | IsSupervisorAndDeviceOwner]
     serializer_class = DeviceLogListSerializer
     pagination_class = DeviceLogPagination
 
@@ -331,59 +354,4 @@ class GetDeviceStatusReportAPIView(APIView):
         return Response({'device_status' : device_status_count, "data": output.data, "stats": stats},
                 status=status.HTTP_200_OK)
         
-
-# class ShowDataView(APIView):
-#     def post(self, request, *args, **kwargs):
-#         # received_data = request.data  # this contains the JSON sent by DetailDevice
-#         # serializer = DeviceSerializer(ReceiveData)
-#         received_data = cache.get('cached_data')
-#
-#         if received_data:
-#             return Response({
-#                 "message": "Data received successfully",
-#                 "received_data": received_data  # make sure to return the variable
-#             }, status=status.HTTP_200_OK)
-#         else:
-#             return Response({
-#                 "message": "Failed Receiving data!",
-#                 "received_data": received_data  # make sure to return the variable
-#             }, status=status.HTTP_404_NOT_FOUND)
-
-
-# class MachineStatusView(APIView):
-#
-#     def get(self, request, id):
-#         # machine = Device.objects.get(id=machine_id)
-#         result = DeviceService.process_machine(machine_id=id)
-#
-#         if result is not None:
-#             data = result['data']
-#         else:
-#             data = {'status' : "Offline", 'message': "No data received"}
-#
-#         url_path = reverse("machine:show_data")
-#         target_url = request.build_absolute_uri(url_path)
-#         requests.post(target_url, json=data)
-#
-#         if data:
-#             return JsonResponse({
-#                 "machine": Device.objects.get(pk=id).name,
-#                 "status": "online",
-#                 "data": data,
-#             })
-#
-#         return JsonResponse({
-#             "machine": Device.objects.get(pk=id).name,
-#             "status": "offline",
-#             "data": None,
-#         })
-
-
-class SendDate(APIView):
-    permission_classes = [IsAdminUser]
-
-    
-class ReceivedData(APIView):
-    permission_classes = [IsAdminUser]
-
 

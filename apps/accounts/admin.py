@@ -5,7 +5,7 @@ from .models import CustomUser, Role
 
 @admin.register(CustomUser)
 class CustomUserAdmin(admin.ModelAdmin):
-    list_display = ('phone_number', 'email', 'name', 'role', 'is_staff', 'is_active', 'date_joined')
+    list_display = ('id', 'phone_number', 'email', 'name', 'role', 'is_staff', 'is_active', 'date_joined')
     
 
 @admin.register(Role)

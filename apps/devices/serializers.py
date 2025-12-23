@@ -187,6 +187,7 @@ class DeviceLogOutputSerializer(serializers.Serializer):
     supervisor = serializers.SerializerMethodField(read_only=True)  # This is for the test 
 
     class Meta:
+        model = DeviceLog
         fields = ('id', 'device', 'device_type', 'time', 'value')
 
     def get_supervisor(self, obj):
