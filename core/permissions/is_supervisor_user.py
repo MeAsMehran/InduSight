@@ -1,4 +1,5 @@
 from rest_framework.permissions import BasePermission
+from apps.devices.models import Device
 
 
 class IsSupervisorUser(BasePermission):
@@ -27,3 +28,35 @@ class IsSupervisorAndDeviceOwner(BasePermission):
         #             and request.user.role.name == "supervisor"
         #             and request.user in obj.supervisor.all()
         #         )
+        
+
+class IsSupervisorOfDevice(BasePermission):
+    """
+    Allows supervisors to manage thresholds only for devices they supervise.
+    """
+
+    def has_permission(self, request, view):
+        # Authentication required
+        if not request.user or not request.user.is_authenticated:
+            return False
+
+        # CREATE: check device from request data
+        if request.method == "POST":
+            device_id = request.data.get("device")
+            if not device_id:
+                return False
+
+            try:
+                device = Device.objects.get(pk=device_id)
+            except Device.DoesNotExist:
+                return False
+
+            return device.supervisor.filter(pk=request.user.pk).exists()
+
+        return True
+
+    def has_object_permission(self, request, view, obj):
+        # DELETE / UPDATE / RETRIEVE
+        # obj is a Threshold instance
+        return obj.device.supervisor.filter(pk=request.user.pk).exists()
+

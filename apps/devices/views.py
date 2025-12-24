@@ -90,7 +90,7 @@ class ListDeviceType(ListAPIView):
 
 @method_decorator(name='delete', decorator=swagger_auto_schema(tags=['DeviceTypes']))
 class DeleteDeviceType(DestroyAPIView):
-    permission_classes = [IsAdminUser]          
+    permission_classes = [IsAdminUser]
     queryset = DeviceType.objects.all()
     serializer_class = DeviceTypeSerializer
     lookup_field = 'id'
@@ -167,7 +167,7 @@ class ListDeviceLog(ListAPIView):
     serializer_class = DeviceLogOutputSerializer
 
     def get_queryset(self):
-        user = self.request.user 
+        user = self.request.user
 
         if user.role.name == 'admin':
             return DeviceLog.objects.all()
@@ -218,8 +218,8 @@ class UpdateDeviceStatusAPIView(APIView):
             lately_data.append(data_type_log_json)
 
 
-        now_time = timezone.now() 
-        last_device_log_time = last_device_log.time 
+        now_time = timezone.now()
+        last_device_log_time = last_device_log.time
         difference = (now_time - last_device_log_time).total_seconds()
 
         if difference <= 120:
