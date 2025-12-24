@@ -1,6 +1,9 @@
 from rest_framework import serializers
 from apps.thresholds.models import Threshold, Alert
 from django.utils import timezone
+from apps.devices.models import Device
+from django.shortcuts import get_object_or_404
+
 
 
 # serializer classes:
@@ -12,7 +15,7 @@ class ThresholdCreateSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         instance = Threshold(**attrs)   # create an instance from Threshold with the attrs
-        instance.full_clean()   # check the attrs values with full_clean() which validate the the condition we set for saving a Threshold object in db! 
+        instance.full_clean()   # check the attrs values with full_clean() which validate the the condition we set for saving a Threshold object in db!
         return attrs
 
 
