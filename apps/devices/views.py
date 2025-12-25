@@ -250,8 +250,12 @@ class UpdateDeviceStatusAPIView(APIView):
 from apps.devices.services.device_status_service import device_status
 from apps.devices.queries.device_log_filter import dev_log_filter
 from apps.devices.utils.device_logs_csv import export_device_logs_to_csv
+@method_decorator(name='get', decorator=swagger_auto_schema(
+    tags=['DeviceLogs'],
+    query_serializer=DeviceLogListSerializer,
+))
 class GetDeviceStatusReportAPIView(APIView):
-    permission_classes = [IsAuthenticated & IsAdminUser | IsSupervisorAndDeviceOwner]
+    permission_classes = [IsAuthenticated & (IsAdminUser | IsSupervisorAndDeviceOwner)]
     model = DeviceLog
     queryset = DeviceLog.objects.all()
     serializer_class = DeviceLogListSerializer
