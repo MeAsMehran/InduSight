@@ -3,11 +3,14 @@ from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.core.cache import caches
 from django.db.models import Avg, Max, Min
+from django.db.models import OuterRef, Subquery
+
 
 # drf:
 from rest_framework import status, serializers
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError
 from rest_framework.generics import CreateAPIView, RetrieveAPIView, ListAPIView, \
     DestroyAPIView, get_object_or_404
 from rest_framework.permissions import IsAuthenticated
@@ -30,6 +33,7 @@ from apps.devices.paginations import DeviceLogPagination
 # permissions:
 from core.permissions.is_supervisor_user import IsSupervisorAndDeviceOwner, IsSupervisorUser, IsAdminOrDeviceSupervisor
 from core.permissions.is_admin_user import IsAdminUser
+
 
 
 # Create your views here.
@@ -114,10 +118,7 @@ from apps.devices.tasks import alert_send_mail
 class CreateDeviceLog(APIView):
     permission_classes = [IsAuthenticated]
     
-    @swagger_auto_schema(
-        request_body=DeviceLogCreateSerializer,
-        tags=['DeviceLogs']
-    )
+    @swagger_auto_schema(request_body=DeviceLogCreateSerializer, tags=['DeviceLogs'])
     def post(self, request):
         user = request.user
 
@@ -132,35 +133,34 @@ class CreateDeviceLog(APIView):
         device = serializer.validated_data.get('device')
         device_type = serializer.validated_data.get('device_type')
         value = serializer.validated_data.get('value')
-
-        try:
+        
+        
+        if Threshold.objects.filter(device=device, device_type=device_type).exists():
             threshold = Threshold.objects.get(device=device, device_type=device_type)
-        except Threshold.DoesNotExist:
-            raise ValidationError({"threshold": "No threshold found for this device and device type."})
 
-        if threshold.active:
-            if value > threshold.max_value:
-                alert = Alert.objects.create(
-                        device=device,
-                        device_type=device_type,
-                        threshold=threshold,
-                        value=value,
-                        situation="above_max",
-                        message=f"The value:{value} of device_type:{device_type} from device:{device} with code:{device.code} is above its threshold:{threshold.max_value}")
-                alert_send_mail.delay(user_email=user.email, alert_message=alert.message)
-                # alert_send_mail.delay(alert_message=alert.message)
+            if threshold.active:
+                if value > threshold.max_value:
+                    alert = Alert.objects.create(
+                            device=device,
+                            device_type=device_type,
+                            threshold=threshold,
+                            value=value,
+                            situation="above_max",
+                            message=f"The value:{value} of device_type:{device_type} from device:{device} with code:{device.code} is above its threshold:{threshold.max_value}")
+                    alert_send_mail.delay(user_email=user.email, alert_message=alert.message)
+                    # alert_send_mail.delay(alert_message=alert.message)
 
-            elif value < threshold.min_value:
-                alert = Alert.objects.create(
-                        device=device,
-                        device_type=device_type,
-                        threshold=threshold,
-                        value=value,
-                        situation="below_min",
-                        message=f"The value:{value} of device_type:{device_type} with code:{device_type.code} from device:{device} with code:{device.code} is below its threshold:{threshold.min_value}")
-                
-                alert_send_mail.delay(user_email=user.email, alert_message=alert.message)
-                # alert_send_mail.delay(alert_message=alert.message)
+                elif value < threshold.min_value:
+                    alert = Alert.objects.create(
+                            device=device,
+                            device_type=device_type,
+                            threshold=threshold,
+                            value=value,
+                            situation="below_min",
+                            message=f"The value:{value} of device_type:{device_type} with code:{device_type.code} from device:{device} with code:{device.code} is below its threshold:{threshold.min_value}")
+                    
+                    alert_send_mail.delay(user_email=user.email, alert_message=alert.message)
+                    # alert_send_mail.delay(alert_message=alert.message)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -257,106 +257,32 @@ class GetDeviceStatusReportAPIView(APIView):
     pagination_class = DeviceLogPagination
 
     def parse_int_list(self, raw_value):
-        """
-        Convert comma-separated list string into list of ints.
-        Example: "1,2,3" → [1, 2, 3]
-        """
         if not raw_value:
             return None
-
         parts = raw_value.split(',')
         try:
             return [int(x.strip()) for x in parts if x.strip() != ""]
         except ValueError:
-            raise serializers.ValidationError("Must be comma-separated integers, e.g. 1,2,3")
- 
-    @swagger_auto_schema(
-        manual_parameters=[
-            openapi.Parameter(
-                name='device_ids',
-                in_=openapi.IN_QUERY,
-                description='List of device IDs (JSON list). Example: 1,2,3',
-                type=openapi.TYPE_STRING,
-                required=True
-            ),
-            openapi.Parameter(
-                name='device_type_ids',
-                in_=openapi.IN_QUERY,
-                description='List of device type IDs (JSON list). Example: 4,5',
-                type=openapi.TYPE_STRING,
-                required=False
-            ),
-            openapi.Parameter(
-                name='start_date',
-                in_=openapi.IN_QUERY,
-                description='Start date (ISO8601). Example: 2025-01-01T00:00:00',
-                type=openapi.TYPE_STRING,
-                required=False
-            ),
-            openapi.Parameter(
-                name='end_date',
-                in_=openapi.IN_QUERY,
-                description='End date (ISO8601). Example: 2025-06-01T00:00:00',
-                type=openapi.TYPE_STRING,
-                required=False
-            ),
-            openapi.Parameter(
-                name='order_by',
-                in_=openapi.IN_QUERY,
-                description='Order By',
-                type=openapi.TYPE_STRING,
-                required=False
-            ),
-            openapi.Parameter(
-                name='search',
-                in_=openapi.IN_QUERY,
-                description='search from the fields: device_name, parameter_name',
-                type=openapi.TYPE_STRING,
-                required=False
-            ),
-            openapi.Parameter(
-                name='page_size',
-                in_=openapi.IN_QUERY,
-                description='Return the number of the records each request or page',
-                type=openapi.TYPE_STRING,
-                required=False
-            ),
-            openapi.Parameter(
-                name='page_number',
-                in_=openapi.IN_QUERY,
-                description='Page number for pagination',
-                type=openapi.TYPE_STRING,
-                required=False
-            ),
-            openapi.Parameter(
-                name='export',
-                in_=openapi.IN_QUERY,
-                description='export device logs',
-                type=openapi.TYPE_STRING,
-                required=False
-            ),
-        ]
-    )
+            raise serializers.ValidationError("Must be comma-separated integers")
+
     def get(self, request):
         user = request.user
+
         if user.role.name == 'admin':
             device_logs = DeviceLog.objects.all()
 
-        if user.role.name == 'supervisor':
+        elif user.role.name == 'supervisor':
             device_logs = DeviceLog.objects.filter(device__supervisor=user)
-        
-        
-        # Online/Offline devices number:
+
+        # Online / Offline
         device_status_count = device_status()
 
-        # query params filtering:
         try:
             device_ids = self.parse_int_list(request.GET.get("device_ids"))
             device_type_ids = self.parse_int_list(request.GET.get("device_type_ids"))
         except serializers.ValidationError as exc:
             return Response({"detail": str(exc)}, status=400)
 
-        # Build serializer params
         query_params = {
             "device_ids": device_ids,
             "device_type_ids": device_type_ids or [],
@@ -370,19 +296,15 @@ class GetDeviceStatusReportAPIView(APIView):
         }
 
         serializer = self.serializer_class(data=query_params)
-
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-     
+        serializer.is_valid(raise_exception=True)
         validated_params = serializer.validated_data
 
-        # Filter queryset
         queryset = dev_log_filter(params=validated_params, device_logs=device_logs)
 
         if validated_params.get("export") == "csv":
             return export_device_logs_to_csv(queryset)
 
-        # avg/max/min stats:
+        # avg / max / min
         stats_qs = (
             queryset
             .values("device_type__id", "device_type__parameter")
@@ -392,19 +314,47 @@ class GetDeviceStatusReportAPIView(APIView):
                 min_value=Min("value"),
             )
         )
-
         stats = DeviceLogStatsSerializer(stats_qs, many=True).data
 
-        # Apply pagination
+        # lateset value per device type
+        latest_log_subquery = (
+            queryset
+            .filter(device_type=OuterRef("device_type"))
+            .order_by("-time")
+        )
+
+        latest_parameters = (
+            queryset
+            .values(
+                "device_type__id",
+                "device_type__parameter",
+            )
+            .annotate(
+                last_value=Subquery(latest_log_subquery.values("value")[:1]),
+                last_time=Subquery(latest_log_subquery.values("time")[:1]),
+            )
+            .distinct()
+        )
+
+        # Pagination
         paginator = self.pagination_class()
         page = paginator.paginate_queryset(queryset, request)
 
         if page is not None:
             output = DeviceLogOutputSerializer(page, many=True)
-            return paginator.get_paginated_response(output.data)
+            return paginator.get_paginated_response({
+                "device_status": device_status_count,
+                "data": output.data,
+                "stats": stats,
+                "latest_parameters": latest_parameters,
+            })
 
         output = DeviceLogOutputSerializer(queryset, many=True)
-        return Response({'device_status' : device_status_count, "data": output.data, "stats": stats},
-                status=status.HTTP_200_OK)
-        
+
+        return Response({
+            "device_status": device_status_count,
+            "data": output.data,
+            "stats": stats,
+            "latest_parameters": latest_parameters,
+        }, status=status.HTTP_200_OK)
 
