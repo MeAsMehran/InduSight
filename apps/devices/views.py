@@ -120,8 +120,6 @@ class CreateDeviceLog(APIView):
     
     @swagger_auto_schema(request_body=DeviceLogCreateSerializer, tags=['DeviceLogs'])
     def post(self, request):
-        user = request.user
-
         serializer = DeviceLogCreateSerializer(data=request.data)
         
         # serializer.is_valid(raise_exception=True)
@@ -134,6 +132,9 @@ class CreateDeviceLog(APIView):
         device_type = serializer.validated_data.get('device_type')
         value = serializer.validated_data.get('value')
         
+        # device supervisor user:
+        device_users = device.supervisor
+        device_users_email = list(device_users.values_list("email", flat=True))
         
         if Threshold.objects.filter(device=device, device_type=device_type).exists():
             threshold = Threshold.objects.get(device=device, device_type=device_type)
@@ -147,7 +148,7 @@ class CreateDeviceLog(APIView):
                             value=value,
                             situation="above_max",
                             message=f"The value:{value} of device_type:{device_type} from device:{device} with code:{device.code} is above its threshold:{threshold.max_value}")
-                    alert_send_mail.delay(user_email=user.email, alert_message=alert.message)
+                    alert_send_mail.delay(user_email=device_users_email, alert_message=alert.message)
                     # alert_send_mail.delay(alert_message=alert.message)
 
                 elif value < threshold.min_value:
@@ -159,7 +160,7 @@ class CreateDeviceLog(APIView):
                             situation="below_min",
                             message=f"The value:{value} of device_type:{device_type} with code:{device_type.code} from device:{device} with code:{device.code} is below its threshold:{threshold.min_value}")
                     
-                    alert_send_mail.delay(user_email=user.email, alert_message=alert.message)
+                    alert_send_mail.delay(user_email=device_users_email, alert_message=alert.message)
                     # alert_send_mail.delay(alert_message=alert.message)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
