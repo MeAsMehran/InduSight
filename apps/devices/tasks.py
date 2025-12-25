@@ -20,6 +20,7 @@ def alert_send_mail(user_email, alert_message):
         subject="⚠️ALARM⚠️",
         message=alert_message,
         from_email=None,  # uses DEFAULT_FROM_EMAIL
-        recipient_list=[user_email, ],
+        # recipient_list=[user_email, ],
+        recipient_list=user_email,
         fail_silently=False,
     )
