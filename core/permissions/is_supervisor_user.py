@@ -19,7 +19,7 @@ class IsSupervisorAndDeviceOwner(BasePermission):
     def has_object_permission(self, request, view, obj):
         return (
             request.user and
-            request.user.is_authenticated and 
+            request.user.is_authenticated and
             request.user.role.name == "supervisor" and
             obj.supervisor.filter(pk=request.user.pk).exists())     # obj.supervisor is queryset
 
@@ -60,3 +60,21 @@ class IsSupervisorOfDevice(BasePermission):
         # obj is a Threshold instance
         return obj.device.supervisor.filter(pk=request.user.pk).exists()
 
+
+class IsAdminOrDeviceSupervisor(BasePermission):
+    """
+    Admins can access all devices.
+    Supervisors can access only devices they supervise.
+    """
+
+    def has_permission(self, request, view):
+        # Must be authenticated
+        return request.user and request.user.is_authenticated
+
+    def has_object_permission(self, request, view, obj):
+        # Admin has full access
+        if request.user.is_staff or request.user.is_superuser:
+            return True
+
+        # Supervisor owns device (ManyToMany)
+        return obj.supervisor.filter(pk=request.user.pk).exists()

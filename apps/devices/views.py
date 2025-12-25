@@ -28,30 +28,41 @@ from apps.devices.serializers import DeviceSerializer, DeviceTypeSerializer, Dev
 from apps.devices.paginations import DeviceLogPagination
 
 # permissions:
-from core.permissions.is_supervisor_user import IsSupervisorAndDeviceOwner
+from core.permissions.is_supervisor_user import IsSupervisorAndDeviceOwner, IsSupervisorUser, IsAdminOrDeviceSupervisor
 from core.permissions.is_admin_user import IsAdminUser
 
 
 # Create your views here.
 
+#=======================================================================================================================
+
 # DEVICE CRUD:
 @method_decorator(name='post', decorator=swagger_auto_schema(tags=['Devices']))
 class CreateDevice(CreateAPIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminUser | IsSupervisorUser]
     queryset = Device.objects.all()
     serializer_class = DeviceSerializer
 
 
 @method_decorator(name='get', decorator=swagger_auto_schema(tags=['Devices']))
 class ListDevice(ListAPIView):
-    permission_classes = [IsAdminUser]
-    queryset = Device.objects.all()
+    permission_classes = [IsAuthenticated]
     serializer_class = DeviceSerializer
+    
+    def get_queryset(self):
+        user = self.request.user
+
+        # Admin sees everything
+        if user.role.name == 'admin' or user.is_superuser:
+            return Device.objects.all()
+
+        # Supervisor sees only owned devices
+        return Device.objects.filter(supervisor=user)
 
 
 @method_decorator(name='get', decorator=swagger_auto_schema(tags=['Devices']))
 class DetailDevice(RetrieveAPIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminOrDeviceSupervisor]
     queryset = Device.objects.all()
     serializer_class = DeviceSerializer
     lookup_field = 'id'
@@ -59,23 +70,24 @@ class DetailDevice(RetrieveAPIView):
 
 @method_decorator(name='delete', decorator=swagger_auto_schema(tags=['Devices']))
 class DeleteDevice(DestroyAPIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminOrDeviceSupervisor]
     queryset = Device.objects.all()
     serializer_class = DeviceSerializer
     lookup_field = 'id'
 
+#=======================================================================================================================
 
 # DEVICE TYPE CRUD:
 @method_decorator(name='post', decorator=swagger_auto_schema(tags=['DeviceTypes']))
 class CreateDeviceType(CreateAPIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminUser | IsSupervisorUser]
     queryset = DeviceType.objects.all()
     serializer_class = DeviceTypeSerializer
 
 
 @method_decorator(name='get', decorator=swagger_auto_schema(tags=['DeviceTypes']))
 class DetailDeviceType(RetrieveAPIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminOrDeviceSupervisor]
     queryset = DeviceType.objects.all()
     serializer_class = DeviceTypeSerializer
     lookup_field = 'id'
@@ -90,11 +102,12 @@ class ListDeviceType(ListAPIView):
 
 @method_decorator(name='delete', decorator=swagger_auto_schema(tags=['DeviceTypes']))
 class DeleteDeviceType(DestroyAPIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminUser | IsSupervisorUser]
     queryset = DeviceType.objects.all()
     serializer_class = DeviceTypeSerializer
     lookup_field = 'id'
 
+#=======================================================================================================================
 
 # DEVICE LOG CRUD:
 from apps.devices.tasks import alert_send_mail
