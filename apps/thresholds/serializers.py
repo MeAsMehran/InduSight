@@ -88,7 +88,7 @@ class AlertListSerializer(serializers.ModelSerializer):
     
 
 # class AlertFilterSerializer(serializers.Serializer):
-#     
+#
 #     device_ids = serializers.ListField(
 #         child=serializers.IntegerField(),
 #         required=False,

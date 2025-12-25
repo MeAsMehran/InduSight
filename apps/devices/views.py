@@ -133,35 +133,34 @@ class CreateDeviceLog(APIView):
         device = serializer.validated_data.get('device')
         device_type = serializer.validated_data.get('device_type')
         value = serializer.validated_data.get('value')
-
-        try:
+        
+        
+        if Threshold.objects.filter(device=device, device_type=device_type).exists():
             threshold = Threshold.objects.get(device=device, device_type=device_type)
-        except Threshold.DoesNotExist:
-            raise ValidationError({"threshold": "No threshold found for this device and device type."})
 
-        if threshold.active:
-            if value > threshold.max_value:
-                alert = Alert.objects.create(
-                        device=device,
-                        device_type=device_type,
-                        threshold=threshold,
-                        value=value,
-                        situation="above_max",
-                        message=f"The value:{value} of device_type:{device_type} from device:{device} with code:{device.code} is above its threshold:{threshold.max_value}")
-                alert_send_mail.delay(user_email=user.email, alert_message=alert.message)
-                # alert_send_mail.delay(alert_message=alert.message)
+            if threshold.active:
+                if value > threshold.max_value:
+                    alert = Alert.objects.create(
+                            device=device,
+                            device_type=device_type,
+                            threshold=threshold,
+                            value=value,
+                            situation="above_max",
+                            message=f"The value:{value} of device_type:{device_type} from device:{device} with code:{device.code} is above its threshold:{threshold.max_value}")
+                    alert_send_mail.delay(user_email=user.email, alert_message=alert.message)
+                    # alert_send_mail.delay(alert_message=alert.message)
 
-            elif value < threshold.min_value:
-                alert = Alert.objects.create(
-                        device=device,
-                        device_type=device_type,
-                        threshold=threshold,
-                        value=value,
-                        situation="below_min",
-                        message=f"The value:{value} of device_type:{device_type} with code:{device_type.code} from device:{device} with code:{device.code} is below its threshold:{threshold.min_value}")
-                
-                alert_send_mail.delay(user_email=user.email, alert_message=alert.message)
-                # alert_send_mail.delay(alert_message=alert.message)
+                elif value < threshold.min_value:
+                    alert = Alert.objects.create(
+                            device=device,
+                            device_type=device_type,
+                            threshold=threshold,
+                            value=value,
+                            situation="below_min",
+                            message=f"The value:{value} of device_type:{device_type} with code:{device_type.code} from device:{device} with code:{device.code} is below its threshold:{threshold.min_value}")
+                    
+                    alert_send_mail.delay(user_email=user.email, alert_message=alert.message)
+                    # alert_send_mail.delay(alert_message=alert.message)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
