@@ -13,7 +13,7 @@ from apps.thresholds.models import Threshold, Alert
 from rest_framework.permissions import IsAuthenticated
 from core.permissions.is_super_user import IsSuperUser
 from core.permissions.is_admin_user import IsAdminUser
-from core.permissions.is_supervisor_user import IsSupervisorUser, IsSupervisorOfDevice
+from core.permissions.is_supervisor_user import IsSupervisorUser, IsSupervisorOfDevice, IsAdminOrDeviceSupervisor
 from core.permissions.is_not_authenticated import IsNotAuthenticated
 
 # Serializers:
@@ -64,6 +64,17 @@ class ThresholdListAPIView(ListAPIView):
     queryset = Threshold.objects.all()
     serializer_class = ThresholdListSerializer
 
+    def get_queryset(self):
+        user = self.request.user
+
+        # Admin sees everything
+        if user.role.name == 'admin' or user.is_superuser:
+            return Threshold.objects.all()
+
+        # Supervisor sees only owned devices
+        return Threshold.objects.filter(device__supervisor=user)
+    
+
 
 @method_decorator(name='delete', decorator=swagger_auto_schema(tags=['Thresholds']))
 class ThresholdDeleteAPIView(DestroyAPIView):
@@ -82,26 +93,63 @@ class AlertCreateAPIView(CreateAPIView):
 
 @method_decorator(name='get', decorator=swagger_auto_schema(tags=['Alerts']))
 class AlertDetailAPIView(RetrieveAPIView):
+    permission_classes = [IsAuthenticated & (IsAdminUser | IsSupervisorOfDevice)]
     queryset = Alert.objects.all()
     serializer_class = AlertDetailSerializer
     lookup_field = 'id'
     lookup_url_kwarg = 'alert_id'
 
 
-@method_decorator(name='get', decorator=swagger_auto_schema(tags=['Alerts']))
+
+value_param = openapi.Parameter(
+    'value', openapi.IN_QUERY, type=openapi.TYPE_NUMBER
+)
+
+situation_param = openapi.Parameter(
+    'situation', openapi.IN_QUERY, type=openapi.TYPE_STRING
+)
+
+device_param = openapi.Parameter(
+    'device', openapi.IN_QUERY, type=openapi.TYPE_INTEGER
+)
+
+@method_decorator(
+    name='get',
+    decorator=swagger_auto_schema(
+        tags=['Alerts'],
+        manual_parameters=[value_param, situation_param, device_param],
+    )
+)
 class AlertListAPIView(ListAPIView):
-    queryset = Alert.objects.all()
+    permission_classes = [IsAuthenticated & (IsAdminUser | IsSupervisorOfDevice)]
+    # queryset = Alert.objects.all()
     serializer_class = AlertListSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter,]
-    filterset_fields = ['value', 'situation', 'device']
+    filterset_fields = {
+            'device': ['exact', 'in'],
+            'situation': ['exact'],
+            'value': ['exact', 'gte', 'lte'],
+            'created_at': ['gte', 'lte'],
+        }
     search_fields = ['message', 'device__name', 'device_type__parameter']
     ordering_fields = ['created_at']
     ordering = ['-created_at']
+    
+    def get_queryset(self):
+        user = self.request.user
 
+        # Admin sees everything
+        if user.role.name == 'admin' or user.is_superuser:
+            return Alert.objects.all()
 
-@method_decorator(name='delete', decorator=swagger_auto_schema(tags=['Alerts']))
-class AlertDeleteAPIView(DestroyAPIView):
-    queryset = Alert.objects.all()
-    lookup_field = 'id'
-    lookup_url_kwarg = 'alert_id'
+        # Supervisor sees only owned devices
+        return Alert.objects.filter(device__supervisor=user)
+    
+    
+
+# @method_decorator(name='delete', decorator=swagger_auto_schema(tags=['Alerts']))
+# class AlertDeleteAPIView(DestroyAPIView):
+#     queryset = Alert.objects.all()
+#     lookup_field = 'id'
+#     lookup_url_kwarg = 'alert_id'
 

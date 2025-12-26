@@ -12,9 +12,9 @@ SITUATION = (
 class Threshold(models.Model):
     device = models.ForeignKey(Device, on_delete=models.CASCADE, related_name='thresholds') 
     device_type = models.ForeignKey(DeviceType, on_delete=models.CASCADE, related_name='thresholds') 
-    min_value = models.FloatField(default=0) 
-    max_value = models.FloatField(default=0) 
-    active = models.BooleanField(default=False) 
+    min_value = models.FloatField(default=0)
+    max_value = models.FloatField(default=0)
+    active = models.BooleanField(default=False)
 
     def clean(self):
         if self.min_value >= self.max_value:

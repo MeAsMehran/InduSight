@@ -63,7 +63,7 @@ class IsSupervisorOfDevice(BasePermission):
 
 class IsAdminOrDeviceSupervisor(BasePermission):
     """
-    Admins can access all devices.
+    Admins can access all.
     Supervisors can access only devices they supervise.
     """
 
@@ -73,7 +73,7 @@ class IsAdminOrDeviceSupervisor(BasePermission):
 
     def has_object_permission(self, request, view, obj):
         # Admin has full access
-        if request.user.is_staff or request.user.is_superuser:
+        if request.user.role.name == "admin" or request.user.is_superuser:
             return True
 
         # Supervisor owns device (ManyToMany)

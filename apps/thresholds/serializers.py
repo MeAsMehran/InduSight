@@ -62,7 +62,6 @@ class AlertDetailSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-
 class AlertListSerializer(serializers.ModelSerializer):
     
     device_name = serializers.CharField(source='device.name', read_only=True)
@@ -132,6 +131,5 @@ class AlertListSerializer(serializers.ModelSerializer):
 #             )
 #
 #         return attrs
-#
 
 

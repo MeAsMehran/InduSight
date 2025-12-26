@@ -28,6 +28,7 @@ from .serializers import CustomUserRegisterSerializer, CustomUserLoginSerializer
 # Create your views here.
 
 class UserRegisterAPIView(APIView):
+    permission_classes = [IsNotAuthenticated]
     serializer_class = CustomUserRegisterSerializer
 
     @swagger_auto_schema(request_body=CustomUserRegisterSerializer)

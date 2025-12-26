@@ -24,15 +24,24 @@ class Downtime(models.Model):
     def __str__(self):
         return self.device.name
 
-    # For calculating duration:
+
     def save(self, *args, **kwargs):
-        
-        # if it wasn't the current downtime check if the device is in downtime already or not:
+
+        # Prevent multiple active downtimes
         if not self.pk:
-            if Downtime.objects.filter(device=self.device, finish__isnull=True).exists():
-                raise ValidationError("You can't add another downtime for this device, this device is already in downtime!")
-            
-            if self.start and self.finish:
-                self.duration = (self.finish - self.start)       
-        
+            if Downtime.objects.filter(
+                device=self.device,
+                finish__isnull=True
+            ).exists():
+                raise ValidationError(
+                    "You can't add another downtime for this device, this device is already in downtime!"
+                )
+
+        # Calculate duration whenever finish is set
+        if self.start and self.finish:
+            self.duration = self.finish - self.start
+        else:
+            self.duration = None
+
         super().save(*args, **kwargs)
+

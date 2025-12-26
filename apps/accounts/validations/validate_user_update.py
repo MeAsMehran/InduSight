@@ -1,5 +1,5 @@
 from rest_framework.exceptions import ValidationError
-
+from apps.accounts.models import Role
 
 
 def validate_user_update(data):

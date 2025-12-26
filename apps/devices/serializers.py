@@ -44,6 +44,22 @@ class DeviceSerializer(serializers.ModelSerializer):
         device.supervisor.set(supervisors)
 
         return device
+    
+    def update(self, instance, validated_data):
+        supervisors = validated_data.pop("supervisor_ids", None)
+        device_type_ids = validated_data.pop("device_type_ids", None)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if device_type_ids is not None:
+            instance.device_type.set(device_type_ids)
+        if supervisors is not None:
+            instance.supervisor.set(supervisors)
+            
+        return instance
+
 
 
 from apps.devices.tasks import alert_send_mail
@@ -71,7 +87,7 @@ from apps.devices.validations.params_validate import params_validate
 class DeviceLogListSerializer(serializers.Serializer):
 
     device_ids = serializers.ListField(
-        child=serializers.IntegerField(), 
+        child=serializers.IntegerField(),
         allow_empty=False,
         required=True,
     )

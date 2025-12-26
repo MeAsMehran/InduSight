@@ -12,7 +12,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import CreateAPIView, RetrieveAPIView, ListAPIView, \
-    DestroyAPIView, get_object_or_404
+    DestroyAPIView, get_object_or_404, UpdateAPIView
 from rest_framework.permissions import IsAuthenticated
 
 # swagger:
@@ -43,7 +43,7 @@ from core.permissions.is_admin_user import IsAdminUser
 # DEVICE CRUD:
 @method_decorator(name='post', decorator=swagger_auto_schema(tags=['Devices']))
 class CreateDevice(CreateAPIView):
-    permission_classes = [IsAdminUser | IsSupervisorUser]
+    permission_classes = [IsAdminUser]
     queryset = Device.objects.all()
     serializer_class = DeviceSerializer
 
@@ -66,7 +66,16 @@ class ListDevice(ListAPIView):
 
 @method_decorator(name='get', decorator=swagger_auto_schema(tags=['Devices']))
 class DetailDevice(RetrieveAPIView):
-    permission_classes = [IsAdminOrDeviceSupervisor]
+    permission_classes = [IsAdminUser | IsSupervisorAndDeviceOwner]
+    queryset = Device.objects.all()
+    serializer_class = DeviceSerializer
+    lookup_field = 'id'
+
+    
+@method_decorator(name='put', decorator=swagger_auto_schema(tags=['Devices']))
+@method_decorator(name='patch', decorator=swagger_auto_schema(tags=['Devices']))
+class UpdateDevice(UpdateAPIView):
+    permission_classes = [IsAdminUser | IsSupervisorAndDeviceOwner]
     queryset = Device.objects.all()
     serializer_class = DeviceSerializer
     lookup_field = 'id'
@@ -74,7 +83,7 @@ class DetailDevice(RetrieveAPIView):
 
 @method_decorator(name='delete', decorator=swagger_auto_schema(tags=['Devices']))
 class DeleteDevice(DestroyAPIView):
-    permission_classes = [IsAdminOrDeviceSupervisor]
+    permission_classes = [IsAdminUser | IsSupervisorAndDeviceOwner]
     queryset = Device.objects.all()
     serializer_class = DeviceSerializer
     lookup_field = 'id'
@@ -84,14 +93,14 @@ class DeleteDevice(DestroyAPIView):
 # DEVICE TYPE CRUD:
 @method_decorator(name='post', decorator=swagger_auto_schema(tags=['DeviceTypes']))
 class CreateDeviceType(CreateAPIView):
-    permission_classes = [IsAdminUser | IsSupervisorUser]
+    permission_classes = [IsAdminUser]
     queryset = DeviceType.objects.all()
     serializer_class = DeviceTypeSerializer
 
 
 @method_decorator(name='get', decorator=swagger_auto_schema(tags=['DeviceTypes']))
 class DetailDeviceType(RetrieveAPIView):
-    permission_classes = [IsAdminOrDeviceSupervisor]
+    permission_classes = [IsAdminUser]
     queryset = DeviceType.objects.all()
     serializer_class = DeviceTypeSerializer
     lookup_field = 'id'
@@ -102,11 +111,20 @@ class ListDeviceType(ListAPIView):
     permission_classes = [IsAdminUser]
     queryset = DeviceType.objects.all()
     serializer_class = DeviceTypeSerializer
+    
+
+@method_decorator(name='put', decorator=swagger_auto_schema(tags=['DeviceTypes']))
+@method_decorator(name='patch', decorator=swagger_auto_schema(tags=['DeviceTypes']))
+class UpdateDeviceType(UpdateAPIView):
+    permission_classes = [IsAdminUser]
+    queryset = DeviceType.objects.all()
+    serializer_class = DeviceTypeSerializer
+    lookup_field = 'id'
 
 
 @method_decorator(name='delete', decorator=swagger_auto_schema(tags=['DeviceTypes']))
 class DeleteDeviceType(DestroyAPIView):
-    permission_classes = [IsAdminUser | IsSupervisorUser]
+    permission_classes = [IsAdminUser]
     queryset = DeviceType.objects.all()
     serializer_class = DeviceTypeSerializer
     lookup_field = 'id'
@@ -193,11 +211,11 @@ class ListDeviceLog(ListAPIView):
             return DeviceLog.objects.none()
 
 
-@method_decorator(name='delete', decorator=swagger_auto_schema(tags=['DeviceLogs']))
-class DeleteDeviceLog(DestroyAPIView):
-    queryset = DeviceLog.objects.all()
-    serializer_class = DeviceLogSerializer
-    lookup_field = 'id'
+# @method_decorator(name='delete', decorator=swagger_auto_schema(tags=['DeviceLogs']))
+# class DeleteDeviceLog(DestroyAPIView):
+#     queryset = DeviceLog.objects.all()
+#     serializer_class = DeviceLogSerializer
+#     lookup_field = 'id'
 
 
 @method_decorator(name='post', decorator=swagger_auto_schema(tags=['Devices']))
@@ -254,6 +272,7 @@ from apps.devices.utils.device_logs_csv import export_device_logs_to_csv
     tags=['DeviceLogs'],
     query_serializer=DeviceLogListSerializer,
 ))
+
 class GetDeviceStatusReportAPIView(APIView):
     permission_classes = [IsAuthenticated & (IsAdminUser | IsSupervisorAndDeviceOwner)]
     model = DeviceLog
@@ -305,11 +324,15 @@ class GetDeviceStatusReportAPIView(APIView):
         validated_params = serializer.validated_data
 
         queryset = dev_log_filter(params=validated_params, device_logs=device_logs)
-
+        
+        
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(queryset, request)
+        
         if validated_params.get("export") == "csv":
-            return export_device_logs_to_csv(queryset)
-
-        # avg / max / min
+            export_data = page if page is not None else queryset
+            return export_device_logs_to_csv(export_data)
+        
         stats_qs = (
             queryset
             .values("device_type__id", "device_type__parameter")
@@ -320,8 +343,7 @@ class GetDeviceStatusReportAPIView(APIView):
             )
         )
         stats = DeviceLogStatsSerializer(stats_qs, many=True).data
-
-        # lateset value per device type
+        
         latest_log_subquery = (
             queryset
             .filter(device_type=OuterRef("device_type"))
@@ -340,11 +362,7 @@ class GetDeviceStatusReportAPIView(APIView):
             )
             .distinct()
         )
-
-        # Pagination
-        paginator = self.pagination_class()
-        page = paginator.paginate_queryset(queryset, request)
-
+        
         if page is not None:
             output = DeviceLogOutputSerializer(page, many=True)
             return paginator.get_paginated_response({
@@ -355,11 +373,73 @@ class GetDeviceStatusReportAPIView(APIView):
             })
 
         output = DeviceLogOutputSerializer(queryset, many=True)
+        return Response(
+            {
+                "device_status": device_status_count,
+                "data": output.data,
+                "stats": stats,
+                "latest_parameters": latest_parameters,
+            },
+            status=status.HTTP_200_OK,
+        )
 
-        return Response({
-            "device_status": device_status_count,
-            "data": output.data,
-            "stats": stats,
-            "latest_parameters": latest_parameters,
-        }, status=status.HTTP_200_OK)
+        # # CSV export
+        # if validated_params.get("export") == "csv":
+        #     export_data = page if page is not None else queryset
+        #     return export_device_logs_to_csv(export_data)
+
+        # # avg / max / min
+        # stats_qs = (
+        #     queryset
+        #     .values("device_type__id", "device_type__parameter")
+        #     .annotate(
+        #         avg_value=Avg("value"),
+        #         max_value=Max("value"),
+        #         min_value=Min("value"),
+        #     )
+        # )
+        # stats = DeviceLogStatsSerializer(stats_qs, many=True).data
+
+        # # lateset value per device type
+        # latest_log_subquery = (
+        #     queryset
+        #     .filter(device_type=OuterRef("device_type"))
+        #     .order_by("-time")
+        # )
+
+        # latest_parameters = (
+        #     queryset
+        #     .values(
+        #         "device_type__id",
+        #         "device_type__parameter",
+        #     )
+        #     .annotate(
+        #         last_value=Subquery(latest_log_subquery.values("value")[:1]),
+        #         last_time=Subquery(latest_log_subquery.values("time")[:1]),
+        #     )
+        #     .distinct()
+        # )
+
+        # # Pagination
+        # paginator = self.pagination_class()
+        # page = paginator.paginate_queryset(queryset, request)
+
+        # if page is not None:
+        #     output = DeviceLogOutputSerializer(page, many=True)
+        #     return paginator.get_paginated_response({
+        #         "device_status": device_status_count,
+        #         "data": output.data,
+        #         "stats": stats,
+        #         "latest_parameters": latest_parameters,
+        #     })
+            
+
+        # output = DeviceLogOutputSerializer(queryset, many=True)
+
+        # return Response({
+        #     "device_status": device_status_count,
+        #     "data": output.data,
+        #     "stats": stats,
+        #     "latest_parameters": latest_parameters,
+        # }, status=status.HTTP_200_OK)
 
