@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'apps.downtimes.apps.DowntimesConfig',
 
     # third-party apps:
+    'corsheaders',
     'rest_framework',
     'drf_yasg',
     'phonenumber_field',
@@ -56,6 +57,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -228,6 +230,16 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
 EMAIL_TIMEOUT = 10
+
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",   # Your React/Vue frontend address
+    "http://127.0.0.1:3000",
+    # Add other domains as needed, like your production frontend URL
+]
+
+# TRUE FOR TESTING!!!!!!!
+CORS_ALLOW_ALL_ORIGINS = True  # Only for local testing!
 
 
 # SWAGGER SETTINGS:
