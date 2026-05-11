@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -41,14 +42,22 @@ INSTALLED_APPS = [
     # project apps:
     'apps.accounts.apps.AccountsConfig',
     'apps.devices.apps.DevicesConfig',
+    'apps.thresholds.apps.ThresholdsConfig',
+    'apps.downtimes.apps.DowntimesConfig',
 
     # third-party apps:
+    'corsheaders',
     'rest_framework',
     'drf_yasg',
+    'phonenumber_field',
+    'django_filters',
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -94,6 +103,30 @@ DATABASES = {
 }
 
 
+# REST FRAMEWORK SETTINGS:
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend'
+    ]
+
+}
+
+# SIMPLE_JWT:
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+
+    "ROTATE_REFRESH_TOKENS": False,
+    "BLACKLIST_AFTER_ROTATION": False,
+
+    "AUTH_HEADER_TYPES": ("Bearer",),
+}
+
+
+
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
 
@@ -111,6 +144,9 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+# Custom User Model
+AUTH_USER_MODEL = 'accounts.CustomUser'
 
 
 # Internationalization
@@ -184,6 +220,26 @@ CELERY_BROKER_URL = 'redis://127.0.0.1:6379/2'
 CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/2'
 
 
+# GMAIL SEND:
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST_USER = "homelessguy200303@gmail.com"
+DEFAULT_FROM_EMAIL = "homelessguy200303@gmail.com"
+EMAIL_HOST_PASSWORD = 'pxldcijjfbsvytwy'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
+EMAIL_TIMEOUT = 10
+
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",   # Your React/Vue frontend address
+    "http://127.0.0.1:3000",
+    # Add other domains as needed, like your production frontend URL
+]
+
+# TRUE FOR TESTING!!!!!!!
+CORS_ALLOW_ALL_ORIGINS = True  # Only for local testing!
 
 
 # SWAGGER SETTINGS:
