@@ -15,7 +15,8 @@ class CustomUserManager(BaseUserManager):
         
         if not phone_number:
             raise ValueError(_("Enter a valid phone number"))
-        phone_number = self.normalize_phone_number(phone_number)
+        # phone_number = self.normalize_phone_number(phone_number)
+        # phone_number = phone_number
         if email:
             email = self.normalize_email(email)
         user = self.model(phone_number=phone_number, email=email, **extra_fields)
@@ -38,27 +39,30 @@ class CustomUserManager(BaseUserManager):
         phone_number = self.normalize_phone_number(phone_number)
         return self.create_user(phone_number=phone_number, email=email, password=password, **extra_fields)
     
-    def normalize_phone_number(self, phone_number):
-        """
-            Normalize Iranian phone numbers to local 0XXXXXXXXX format.
-            Accepts:
-            - +989XXXXXXXXX
-            - 091XXXXXXXX
-            - 9XXXXXXXXX
-            Returns: 0XXXXXXXXX
-        """
-        # Remove all non-digit characters
-        digits = ''.join(filter(str.isdigit, str(phone_number)))
+    # def normalize_phone_number(self, phone_number):
+    #     """
+    #         Normalize Iranian phone numbers to local 0XXXXXXXXX format.
+    #         Accepts:
+    #         - +989XXXXXXXXX
+    #         - 091XXXXXXXX
+    #         - 9XXXXXXXXX
+    #         Returns: 0XXXXXXXXX
+    #     """
+    #     # Remove all non-digit characters
+    #     digits = ''.join(filter(str.isdigit, str(phone_number)))
         
-        # Add leading 0 if missing
-        if digits.startswith("98"):       # +98XXXXXXXXX
-            digits = "0" + digits[2:]
-        elif digits.startswith("9") and len(digits) == 10:  # 9XXXXXXXXX
-            digits = "0" + digits
-        elif digits.startswith("0") and len(digits) == 11:  # 091XXXXXXXX
-            pass
-        else:
-            raise ValueError(_("Invalid Iranian phone number format"))
+    #     # Add leading 0 if missing
+    #     if digits.startswith("98"):       # +98XXXXXXXXX
+    #         digits = "0" + digits[2:]
+    #     elif digits.startswith("9") and len(digits) == 10:  # 9XXXXXXXXX
+    #         digits = "0" + digits
+    #     elif digits.startswith("0") and len(digits) == 11:  # 091XXXXXXXX
+    #         pass
+    #     else:
+    #         raise ValueError(_("Invalid Iranian phone number format"))
 
-        return digits
+    #     return digits
+    
+    
+        
 

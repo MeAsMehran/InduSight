@@ -8,12 +8,6 @@ def validate_register(data):
     # Formatting the phone_number
     phone_number = str(data.get('phone_number'))
 
-    if phone_number.startswith("+98"): phone_number = phone_number.replace("+98", "0")
-    elif not phone_number.startswith("+98") and not phone_number.startswith("0"):
-        phone_number = "0" + phone_number
-
-    data["phone_number"] = phone_number
-
     password = data.get('password')
     confirm_password = data.get('confirm_password')
 
@@ -32,6 +26,7 @@ def validate_register(data):
         raise ValidationError("Password and Confirm Password do not match!", status.HTTP_400_BAD_REQUEST)
 
     return data
+
 
 
 def validate_user_creation(data):
